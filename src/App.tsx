@@ -1,10 +1,14 @@
-import { Button, Stack, Typography } from '@mui/material';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import { LoginPage } from './pages/LoginPage';
+import { ProductsPage } from './pages/ProductsPage';
 
 export default function App() {
   return (
-    <Stack spacing={2} sx={{ p: 3 }}>
-      <Typography variant="h5">MUI is connected</Typography>
-      <Button variant="contained">Test button</Button>
-    </Stack>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/products" element={<ProductsPage />} />
+      <Route path="/" element={<Navigate to="/products" replace />} />
+      <Route path="*" element={<Navigate to="/products" replace />} />
+    </Routes>
   );
 }
