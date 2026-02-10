@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../../../shared/config/api';
+
 export type Product = {
   id: number;
   title: string;
@@ -17,7 +19,7 @@ export type ProductsResponse = {
 };
 
 export async function getProducts(params: { limit: number; skip: number }): Promise<ProductsResponse> {
-  const url = new URL('https://dummyjson.com/products');
+  const url = new URL(`${API_BASE_URL}/products`);
   url.searchParams.set('limit', String(params.limit));
   url.searchParams.set('skip', String(params.skip));
 

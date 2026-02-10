@@ -1,6 +1,9 @@
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
+import { useState } from 'react';
+import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
+
 import {
   AppBar,
   Box,
@@ -20,7 +23,14 @@ import {
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 
 export function ProductsPage() {
-  const { data, isFetching, isError, error } = useProductsQuery({ limit: 20, skip: 0 });
+  const [q, setQ] = useState('');
+  const debouncedQ = useDebouncedValue(q, 400);
+
+  const { data, isFetching, isError, error } = useProductsQuery({
+    q: debouncedQ,
+    limit: 20,
+    skip: 0,
+  });
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.100' }}>
@@ -36,13 +46,17 @@ export function ProductsPage() {
             <TextField
               size="small"
               placeholder="Найти"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
               sx={{ width: 'min(720px, 100%)' }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
           </Box>
