@@ -2,8 +2,8 @@ import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import { useState } from 'react';
+import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
-
 import {
   AppBar,
   Box,
@@ -16,11 +16,16 @@ import {
   InputAdornment,
   LinearProgress,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   TextField,
   Toolbar,
   Typography,
 } from '@mui/material';
-import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
+
 
 export function ProductsPage() {
   const [q, setQ] = useState('');
@@ -80,13 +85,32 @@ export function ProductsPage() {
               </Stack>
             }
           />
+
           <CardContent sx={{ pt: 0 }}>
             {isError ? (
               <Typography color="error">{(error as Error).message}</Typography>
             ) : (
-              <Typography variant="body2" color="text.secondary">
-                Получено товаров: {data?.products.length ?? 0}
-              </Typography>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Название</TableCell>
+                    <TableCell>Цена</TableCell>
+                    <TableCell>Рейтинг</TableCell>
+                    <TableCell>Бренд</TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {data?.products.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell>{product.title}</TableCell>
+                      <TableCell>{product.price}</TableCell>
+                      <TableCell>{product.rating}</TableCell>
+                      <TableCell>{product.brand ?? '—'}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>
