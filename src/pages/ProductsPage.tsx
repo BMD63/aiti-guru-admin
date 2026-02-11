@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Product } from '../entities/product/api/getProducts';
+import type { Product, ProductsResponse} from '../entities/product/api/getProducts';
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
 
@@ -110,17 +110,17 @@ export function ProductsPage() {
       brand: values.brand,
     };
 
-    queryClient.setQueryData(
+    queryClient.setQueryData<ProductsResponse>(
       ['products', { q: debouncedQ, limit: 20, skip: 0 }],
-      (old: any) => {
+      (old) => {
         if (!old) return old;
         return {
           ...old,
           products: [newProduct, ...old.products],
+          total: old.total + 1,
         };
       },
     );
-
     reset();
     setOpen(false);
     setToastOpen(true);
