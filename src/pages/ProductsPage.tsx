@@ -25,6 +25,7 @@ import {
 } from '../features/auth/schemas/createProduct.schema';
 
 import {
+  Alert,
   AppBar,
   Box,
   Button,
@@ -39,6 +40,7 @@ import {
   IconButton,
   InputAdornment,
   LinearProgress,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -88,6 +90,7 @@ export function ProductsPage() {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const [toastOpen, setToastOpen] = useState(false);
 
   const {
     register,
@@ -120,6 +123,7 @@ export function ProductsPage() {
 
     reset();
     setOpen(false);
+    setToastOpen(true);
   };
 
   const debouncedQ = useDebouncedValue(q, 400);
@@ -346,6 +350,21 @@ export function ProductsPage() {
 
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={3000}
+        onClose={() => setToastOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setToastOpen(false)}
+          severity="success"
+          variant="filled"
+        >
+          Товар успешно добавлен
+        </Alert>
+      </Snackbar>
+
     </Box>
   );
 }
