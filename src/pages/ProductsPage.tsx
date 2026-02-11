@@ -1,9 +1,21 @@
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
-import { useState } from 'react';
+import {
+  type ColumnDef,
+  type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import type { Product } from '../entities/product/api/getProducts';
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
+
 import {
   AppBar,
   Box,
@@ -26,16 +38,118 @@ import {
   Typography,
 } from '@mui/material';
 
+type SortableColumnId = 'title' | 'price' | 'rating' | 'brand';
+type SortOrder = 'asc' | 'desc';
+
+function parseSort(searchParams: URLSearchParams): { sortBy: SortableColumnId | null; order: SortOrder } {
+  const sortByRaw = searchParams.get('sortBy');
+  const orderRaw = searchParams.get('order');
+
+  const sortBy =
+    sortByRaw === 'title' || sortByRaw === 'price' || sortByRaw === 'rating' || sortByRaw === 'brand'
+      ? sortByRaw
+      : null;
+
+  const order: SortOrder = orderRaw === 'desc' ? 'desc' : 'asc';
+  return { sortBy, order };
+}
+
+function toSortingState(sortBy: SortableColumnId | null, order: SortOrder): SortingState {
+  if (!sortBy) return [];
+  return [{ id: sortBy, desc: order === 'desc' }];
+}
+
+function nextSorting(current: SortingState, columnId: SortableColumnId): SortingState {
+  const active = current[0];
+  if (!active || active.id !== columnId) return [{ id: columnId, desc: false }]; // asc
+  if (active.desc === false) return [{ id: columnId, desc: true }]; // desc
+  return []; // off
+}
+
+function sortingToParams(sorting: SortingState): { sortBy?: string; order?: string } {
+  const s = sorting[0];
+  if (!s) return {};
+  return { sortBy: String(s.id), order: s.desc ? 'desc' : 'asc' };
+}
 
 export function ProductsPage() {
   const [q, setQ] = useState('');
   const debouncedQ = useDebouncedValue(q, 400);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { sortBy, order } = parseSort(searchParams);
 
   const { data, isFetching, isError, error } = useProductsQuery({
     q: debouncedQ,
     limit: 20,
     skip: 0,
   });
+
+  const columns = useMemo<ColumnDef<Product>[]>(
+    () => [
+      {
+        id: 'title',
+        accessorKey: 'title',
+        header: 'Название',
+        cell: (ctx) => ctx.getValue<string>(),
+      },
+      {
+        id: 'price',
+        accessorKey: 'price',
+        header: 'Цена',
+        cell: (ctx) => ctx.getValue<number>(),
+      },
+      {
+        id: 'rating',
+        accessorKey: 'rating',
+        header: 'Рейтинг',
+        cell: (ctx) => ctx.getValue<number>(),
+      },
+      {
+        id: 'brand',
+        accessorKey: 'brand',
+        header: 'Бренд',
+        cell: (ctx) => ctx.getValue<string>() ?? '—',
+      },
+    ],
+    [],
+  );
+
+  const sortingState = useMemo(() => toSortingState(sortBy, order), [sortBy, order]);
+
+  const table = useReactTable({
+    data: data?.products ?? [],
+    columns,
+    state: { sorting: sortingState },
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    manualSorting: false,
+  });
+
+  const handleHeaderClick = (columnId: SortableColumnId) => {
+    const next = nextSorting(sortingState, columnId);
+    const nextParams = sortingToParams(next);
+
+    setSearchParams((prev) => {
+      const sp = new URLSearchParams(prev);
+
+      if (nextParams.sortBy) {
+        sp.set('sortBy', nextParams.sortBy);
+        sp.set('order', nextParams.order ?? 'asc');
+      } else {
+        sp.delete('sortBy');
+        sp.delete('order');
+      }
+
+      return sp;
+    });
+  };
+
+  const renderSortHint = (columnId: SortableColumnId) => {
+    const s = sortingState[0];
+    if (!s || s.id !== columnId) return null;
+    return s.desc ? ' ↓' : ' ↑';
+  };
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'grey.100' }}>
@@ -92,21 +206,39 @@ export function ProductsPage() {
             ) : (
               <Table size="small">
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Название</TableCell>
-                    <TableCell>Цена</TableCell>
-                    <TableCell>Рейтинг</TableCell>
-                    <TableCell>Бренд</TableCell>
-                  </TableRow>
+                  {table.getHeaderGroups().map((hg) => (
+                    <TableRow key={hg.id}>
+                      {hg.headers.map((header) => {
+                        const id = header.column.id as SortableColumnId;
+                        const sortable = id === 'title' || id === 'price' || id === 'rating' || id === 'brand';
+
+                        return (
+                          <TableCell
+                            key={header.id}
+                            onClick={sortable ? () => handleHeaderClick(id) : undefined}
+                            sx={{
+                              cursor: sortable ? 'pointer' : 'default',
+                              userSelect: 'none',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {sortable && renderSortHint(id)}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
                 </TableHead>
 
                 <TableBody>
-                  {data?.products.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>{product.title}</TableCell>
-                      <TableCell>{product.price}</TableCell>
-                      <TableCell>{product.rating}</TableCell>
-                      <TableCell>{product.brand ?? '—'}</TableCell>
+                  {table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
                     </TableRow>
                   ))}
                 </TableBody>
