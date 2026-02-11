@@ -11,10 +11,18 @@ import {
 } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-
 import type { Product } from '../entities/product/api/getProducts';
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
+
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  createProductSchema,
+  type CreateProductFormValues,
+  type CreateProductInput,
+} from '../features/auth/schemas/createProduct.schema';
 
 import {
   AppBar,
@@ -79,6 +87,40 @@ function sortingToParams(sorting: SortingState): { sortBy?: string; order?: stri
 export function ProductsPage() {
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateProductInput, unknown, CreateProductFormValues>({
+    resolver: zodResolver(createProductSchema),
+  });
+
+  const onCreate = (values: CreateProductFormValues) => {
+    const newProduct: Product = {
+      id: Date.now(),
+      title: values.title,
+      price: values.price,
+      rating: 0,
+      brand: values.brand,
+    };
+
+    queryClient.setQueryData(
+      ['products', { q: debouncedQ, limit: 20, skip: 0 }],
+      (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          products: [newProduct, ...old.products],
+        };
+      },
+    );
+
+    reset();
+    setOpen(false);
+  };
 
   const debouncedQ = useDebouncedValue(q, 400);
 
@@ -270,14 +312,38 @@ export function ProductsPage() {
       </Container>
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Добавить товар</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Форма будет здесь
-          </Typography>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <TextField
+            label="Название"
+            error={!!errors.title}
+            helperText={errors.title?.message}
+            {...register('title')}
+          />
+
+          <TextField
+            label="Цена"
+            type="number"
+            error={!!errors.price}
+            helperText={errors.price?.message}
+            {...register('price')}
+          />
+
+          <TextField
+            label="Бренд"
+            {...register('brand')}
+          />
+
+          <TextField
+            label="Артикул"
+            {...register('sku')}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Отмена</Button>
-          <Button variant="contained">Сохранить</Button>
+          <Button variant="contained" onClick={handleSubmit(onCreate)}>
+            Сохранить
+          </Button>
+
         </DialogActions>
       </Dialog>
     </Box>
