@@ -24,6 +24,10 @@ import {
   CardContent,
   CardHeader,
   Container,
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
   IconButton,
   InputAdornment,
   LinearProgress,
@@ -74,6 +78,8 @@ function sortingToParams(sorting: SortingState): { sortBy?: string; order?: stri
 
 export function ProductsPage() {
   const [q, setQ] = useState('');
+  const [open, setOpen] = useState(false);
+
   const debouncedQ = useDebouncedValue(q, 400);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -103,7 +109,18 @@ export function ProductsPage() {
         id: 'rating',
         accessorKey: 'rating',
         header: 'Рейтинг',
-        cell: (ctx) => ctx.getValue<number>(),
+        cell: (ctx) => {
+          const value = ctx.getValue<number>();
+          return (
+            <Typography
+              component="span"
+              color={value < 3 ? 'error.main' : 'text.primary'}
+              fontWeight={value < 3 ? 600 : 400}
+            >
+              {value}
+            </Typography>
+          );
+        },
       },
       {
         id: 'brand',
@@ -193,7 +210,11 @@ export function ProductsPage() {
                 <IconButton aria-label="refresh">
                   <RefreshIcon />
                 </IconButton>
-                <Button variant="contained" startIcon={<AddIcon />}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setOpen(true)}
+                >
                   Добавить
                 </Button>
               </Stack>
@@ -247,6 +268,18 @@ export function ProductsPage() {
           </CardContent>
         </Card>
       </Container>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Добавить товар</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Форма будет здесь
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Отмена</Button>
+          <Button variant="contained">Сохранить</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
