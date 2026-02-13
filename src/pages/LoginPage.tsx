@@ -24,6 +24,16 @@ import { loginSchema, type LoginFormValues } from '../features/auth/schemas/logi
 import { login } from '../features/auth/api/login';
 import { useAuth } from '../features/auth/useAuth';
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const msg = (error as { message?: unknown }).message;
+    if (typeof msg === 'string') return msg;
+  }
+  return 'Не удалось выполнить вход';
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
   const { setSession } = useAuth();
@@ -125,10 +135,16 @@ export function LoginPage() {
             </Typography>
           </Box>
 
-          {mutation.isError && <Alert severity="error">{(mutation.error as Error).message}</Alert>}
+          {mutation.isError && <Alert severity="error">{getErrorMessage(mutation.error)}</Alert>}
+
 
           {/* Form */}
-          <Box sx={{ width: '100%' }}>
+          <Box
+            component="form"
+            onSubmit={handleSubmit(onSubmit)}
+            sx={{ width: '100%' }}
+            noValidate
+          >
              <Stack sx={{ width: '100%', maxWidth: 399, mx: 'auto', gap: 2 }}>
               <Box sx={{ width: '100%' }}>
                 <Typography sx={{
@@ -144,6 +160,7 @@ export function LoginPage() {
                 </Typography>
 
                 <TextField
+                  autoFocus
                   placeholder="test"
                   error={!!errors.username}
                   helperText={errors.username?.message}
@@ -201,6 +218,8 @@ export function LoginPage() {
                       endAdornment: (
                         <InputAdornment position="end">
                           <IconButton
+                            type="button"
+
                             edge="end"
                             onClick={() => setShowPassword((v) => !v)}
                             disabled={mutation.isPending}
@@ -222,9 +241,9 @@ export function LoginPage() {
               />
 
               <Button
+                type="submit"
                 variant="contained"
                 disabled={mutation.isPending}
-                onClick={handleSubmit(onSubmit)}
                 fullWidth
                 size="large"
                 sx={{ borderRadius: 2, height: 44, textTransform: 'none', fontWeight: 600 }}
