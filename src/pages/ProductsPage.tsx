@@ -1,6 +1,6 @@
-import AddIcon from '@mui/icons-material/Add';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+
 import SearchIcon from '@mui/icons-material/Search';
 import {
   type ColumnDef,
@@ -10,7 +10,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef, } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import type { Product, ProductsResponse } from '../entities/product/api/getProducts';
@@ -26,6 +26,12 @@ import {
   type CreateProductFormValues,
   type CreateProductInput,
 } from '../features/auth/schemas/createProduct.schema';
+
+import AddIcon from '@mui/icons-material/Add';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import FirstPageIcon from '@mui/icons-material/FirstPage';
+import LastPageIcon from '@mui/icons-material/LastPage';
 
 import {
   Box,
@@ -111,10 +117,24 @@ export function ProductsPage() {
   const limit = 20;
   const skip = (page - 1) * limit;
   const { data, isFetching, isError, error } = useProductsQuery({
-  q: debouncedQ,
-  limit,
-  skip,
-});
+    q: debouncedQ,
+    limit,
+    skip,
+  });
+  const prevQRef = useRef(debouncedQ);
+
+  useEffect(() => {
+    if (prevQRef.current === debouncedQ) return;
+
+    prevQRef.current = debouncedQ;
+
+    setSearchParams((prev) => {
+      const sp = new URLSearchParams(prev);
+      sp.set('page', '1');
+      return sp;
+    });
+  }, [debouncedQ, setSearchParams]);
+
 
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / limit);
@@ -200,13 +220,16 @@ export function ProductsPage() {
 
     setSearchParams((prev) => {
       const sp = new URLSearchParams(prev);
-
       if (nextParams.sortBy) {
         sp.set('sortBy', nextParams.sortBy);
         sp.set('order', nextParams.order ?? 'asc');
+        sp.set('page', '1');
+
       } else {
         sp.delete('sortBy');
         sp.delete('order');
+        sp.set('page', '1');
+
       }
 
       return sp;
@@ -294,22 +317,56 @@ export function ProductsPage() {
         id: 'plus',
         header: '',
         cell: () => (
-          <IconButton size="small" onClick={() => openToast('Добавлено', 'info')}>
-            <AddIcon fontSize="small" />
-          </IconButton>
+          <Box
+            onClick={() => openToast('Добавлено', 'info')}
+            sx={{
+              width: 52,
+              height: 27,
+              bgcolor: '#242EDB',
+              borderRadius: '23px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              '&:hover': {
+                backgroundColor: '#1F27C8',
+              },
+            }}
+          >
+            <AddIcon sx={{ color: '#FFFFFF', fontSize: 16 }} />
+          </Box>
         ),
-        meta: { align: 'center', width: 60 },
+        meta: { align: 'center', width: 80 },
       },
 
       {
         id: 'more',
         header: '',
         cell: () => (
-          <IconButton size="small" onClick={(e) => handleOpenMenu(e)}>
-            <MoreHorizIcon fontSize="small" />
+          <IconButton
+            size="small"
+            onClick={(e) => handleOpenMenu(e)}
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              border: '2px solid #CFCFCF',
+              backgroundColor: '#FFFFFF',
+              p: 0,
+              '&:hover': {
+                backgroundColor: '#F3F3F3',
+              },
+            }}
+          >
+            <MoreHorizIcon
+              sx={{
+                fontSize: 18,
+                color: '#9E9E9E',
+              }}
+            />
           </IconButton>
         ),
-        meta: { align: 'center', width: 60 },
+        meta: { align: 'center', width: 80 },
       },
 
     ],
@@ -324,6 +381,31 @@ export function ProductsPage() {
     getSortedRowModel: getSortedRowModel(),
     manualSorting: false,
   });
+  const pagesToShow = useMemo(() => {
+    const last = Math.max(totalPages, 1);
+    const current = Math.min(Math.max(page, 1), last);
+
+    const res: Array<number | 'dots'> = [];
+    const push = (v: number | 'dots') => {
+      if (res[res.length - 1] === v) return;
+      res.push(v);
+    };
+
+    push(1);
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(last - 1, current + 1);
+
+    if (start > 2) push('dots');
+
+    for (let p = start; p <= end; p += 1) push(p);
+
+    if (end < last - 1) push('dots');
+
+    if (last > 1) push(last);
+
+    return res;
+  }, [page, totalPages]);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F6F6F6', pt: '20px' }}>
@@ -343,7 +425,16 @@ export function ProductsPage() {
             gap: '10px',
           }}
         >
-          <Typography sx={{ fontSize: 20, fontWeight: 700, color: '#232323' }}>Товары</Typography>
+          <Typography
+            sx={{
+              fontSize: 20,
+              fontWeight: 700,
+              letterSpacing: '-0.015em',
+              color: '#232323',
+            }}
+          >
+            Товары
+          </Typography>
 
           <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             <TextField
@@ -372,8 +463,18 @@ export function ProductsPage() {
 
         {/* Контент */}
         <Box sx={{ width: '100%'}}>
-          <Card>
+          <Card
+            sx={{
+              borderRadius: '10px',
+              boxShadow: '0px 4px 20px rgba(0,0,0,0.03)',
+            }}
+          >
             <CardHeader
+              sx={{
+                px: 3,
+                pt: 3,
+                pb: 2,
+              }}
               title={<Typography sx={{ fontWeight: 600 }}>Все позиции</Typography>}
               action={
                 <Stack direction="row" spacing={1}>
@@ -387,7 +488,7 @@ export function ProductsPage() {
               }
             />
 
-            <CardContent sx={{ pt: 0 }}>
+            <CardContent sx={{ pt: 0, px: 3, pb: 2 }}>
               {isError ? (
                 <Typography color="error">{(error as Error).message}</Typography>
               ) : (
@@ -491,28 +592,71 @@ export function ProductsPage() {
                     </Typography>
 
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Button
-                        variant="text"
+                      <IconButton
+                        size="small"
+                        onClick={() => changePage(1)}
                         disabled={page <= 1}
+                        aria-label="first page"
+                      >
+                        <FirstPageIcon fontSize="small" />
+                      </IconButton>
+
+                      <IconButton
+                        size="small"
                         onClick={() => changePage(page - 1)}
-                        sx={{ textTransform: 'none' }}
+                        disabled={page <= 1}
+                        aria-label="previous page"
                       >
-                        Назад
-                      </Button>
+                        <ChevronLeftIcon fontSize="small" />
+                      </IconButton>
 
-                      <Typography sx={{ fontSize: 14, color: '#232323', fontWeight: 600 }}>
-                        {page}
-                      </Typography>
+                      <Stack direction="row" spacing={0.5} alignItems="center">
+                        {pagesToShow.map((p, idx) =>
+                          p === 'dots' ? (
+                            <Typography key={`dots-${idx}`} sx={{ px: 1, color: '#6B6B6B' }}>
+                              …
+                            </Typography>
+                          ) : (
+                            <Button
+                              key={p}
+                              onClick={() => changePage(p)}
+                              variant={p === page ? 'contained' : 'text'}
+                              size="small"
+                              sx={{
+                                minWidth: 34,
+                                height: 32,
+                                borderRadius: 2,
+                                textTransform: 'none',
+                                px: 1,
+                              }}
+                            >
+                              {p}
+                            </Button>
+                          ),
+                        )}
+                      </Stack>
 
-                      <Button
-                        variant="text"
-                        disabled={page >= totalPages}
+
+                      <IconButton
+                        size="small"
                         onClick={() => changePage(page + 1)}
-                        sx={{ textTransform: 'none' }}
+                        disabled={page >= totalPages}
+                        aria-label="next page"
                       >
-                        Вперёд
-                      </Button>
+                        <ChevronRightIcon fontSize="small" />
+                      </IconButton>
+
+                      <IconButton
+                        size="small"
+                        onClick={() => changePage(totalPages)}
+                        disabled={page >= totalPages}
+                        aria-label="last page"
+                      >
+                        <LastPageIcon fontSize="small" />
+                      </IconButton>
                     </Stack>
+
+
                   </Box>
                 </>
               )}
