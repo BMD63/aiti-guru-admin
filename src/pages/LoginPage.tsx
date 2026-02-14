@@ -1,3 +1,7 @@
+import { Divider, FormField, LogoBadge } from './LoginPage/components';
+import { LOGIN_UI } from './LoginPage/constants';
+import { useLoginForm } from './LoginPage/hooks/useLoginForm';
+
 import {
   Alert,
   Box,
@@ -17,12 +21,8 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { loginSchema, type LoginFormValues } from '../features/auth/schemas/login.schema';
-import { login } from '../features/auth/api/login';
-import { useAuth } from '../features/auth/useAuth';
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -35,8 +35,6 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function LoginPage() {
-  const navigate = useNavigate();
-  const { setSession } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -48,19 +46,7 @@ export function LoginPage() {
     defaultValues: { remember: false },
   });
 
-  const mutation = useMutation({
-    mutationFn: (values: LoginFormValues) =>
-      login({
-        username: values.username,
-        password: values.password,
-        expiresInMins: 60,
-      }),
-    onSuccess: (data, values) => {
-      setSession(data.accessToken, !!values.remember);
-      navigate('/products', { replace: true });
-    },
-  });
-
+  const { mutation } = useLoginForm();
   const onSubmit = (values: LoginFormValues) => mutation.mutate(values);
 
   return (
@@ -85,9 +71,9 @@ export function LoginPage() {
       {/* Inner frame (radius 34) */}
       <Box
         sx={{
-          width: 515,
-          minHeight: 704,
-          borderRadius: '34px',
+          width: LOGIN_UI.innerWidth,
+minHeight: LOGIN_UI.innerMinHeight,
+borderRadius: `${LOGIN_UI.innerRadius}px`,
           background: `
             linear-gradient(
               180deg,
@@ -96,7 +82,7 @@ export function LoginPage() {
             ),
             #FFFFFF
           `,
-          p: '48px',
+          p: `${LOGIN_UI.innerPadding}px`,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -104,27 +90,7 @@ export function LoginPage() {
       >
         <Stack sx={{ width: '100%', gap: '32px', alignItems: 'center' }}>
           {/* Logo badge */}
-          <Box
-            sx={{
-              width: 52,
-              height: 52,
-              borderRadius: '100px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background:
-                'linear-gradient(360deg, rgba(35, 35, 35, 0) 50%, rgba(35, 35, 35, 0.06) 100%), #FFFFFF',
-              boxShadow: '0px 0px 0px 2px #FFFFFF, 0px 12px 8px rgba(0, 0, 0, 0.03)',
-            }}
-          >
-            <Box
-              component="img"
-              src="/AITI_Logo.png"
-              alt="AITI"
-              sx={{ width: 35, height: 34, display: 'block' }}
-            />
-          </Box>
-
+          <LogoBadge />
           {/* Title + subtitle */}
           <Box sx={{ width: '100%' }}>
             <Typography sx={{ fontSize: 20, fontWeight: 700, textAlign: 'center' }}>
@@ -146,44 +112,22 @@ export function LoginPage() {
             noValidate
           >
              <Stack sx={{ width: '100%', maxWidth: 399, mx: 'auto', gap: 2 }}>
-              <Box sx={{ width: '100%' }}>
-                <Typography sx={{
-                  fontStyle: 'normal',
-                  fontWeight: 500,
-                  fontSize: 18,
-                  lineHeight: '150%',
-                  letterSpacing: '-0.015em',
-                  color: '#232323',
-                  mb: 1,
-                }}>
-                  Логин
-                </Typography>
+              <FormField
+                label="Логин"
+                autoFocus
+                autoComplete="username"
+                placeholder="test"
+                error={!!errors.username}
+                helperText={errors.username?.message}
+                disabled={mutation.isPending}
+                {...register('username')}
+                startAdornment={
+                  <InputAdornment position="start">
+                    <PersonOutlineIcon fontSize="small" />
+                  </InputAdornment>
+                }
+              />
 
-                <TextField
-                  autoFocus
-                  autoComplete="username"
-                  inputMode="text"
-                  placeholder="test"
-                  error={!!errors.username}
-                  helperText={errors.username?.message}
-                  disabled={mutation.isPending}
-                  size="small"
-                  sx={{
-                    width: '100%',
-                    '& .MuiOutlinedInput-root': { borderRadius: 2, height: 44 },
-                  }}
-                  {...register('username')}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonOutlineIcon fontSize="small" />
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              </Box>
 
               <Box sx={{ width: '100%' }}>
                 <Typography sx={{
@@ -235,6 +179,35 @@ export function LoginPage() {
                   }}
                 />
               </Box>
+                <FormField
+                  label="Пароль"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  type={showPassword ? 'text' : 'password'}
+                  error={!!errors.password}
+                  helperText={errors.password?.message}
+                  disabled={mutation.isPending}
+                  {...register('password')}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon fontSize="small" />
+                    </InputAdornment>
+                  }
+                  endAdornment={
+                    <InputAdornment position="end">
+                      <IconButton
+                        type="button"
+                        edge="end"
+                        aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                        aria-pressed={showPassword}
+                        onClick={() => setShowPassword((v) => !v)}
+                        disabled={mutation.isPending}
+                      >
+                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                      </IconButton>
+                    </InputAdornment>
+                  }
+                />
 
 
               <FormControlLabel
@@ -257,14 +230,7 @@ export function LoginPage() {
           </Box>
 
           {/* Divider "или" */}
-          <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ height: '1px', bgcolor: 'divider', flex: 1 }} />
-            <Typography variant="caption" color="text.secondary">
-              или
-            </Typography>
-            <Box sx={{ height: '1px', bgcolor: 'divider', flex: 1 }} />
-          </Box>
-
+          <Divider />
           {/* Bottom link */}
           <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
             Нет аккаунта?{' '}
