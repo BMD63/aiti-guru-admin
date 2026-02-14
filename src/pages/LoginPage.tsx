@@ -161,6 +161,8 @@ export function LoginPage() {
 
                 <TextField
                   autoFocus
+                  autoComplete="username"
+                  inputMode="text"
                   placeholder="test"
                   error={!!errors.username}
                   helperText={errors.username?.message}
@@ -199,6 +201,7 @@ export function LoginPage() {
                 <TextField
                   placeholder="••••••••"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   error={!!errors.password}
                   helperText={errors.password?.message}
                   disabled={mutation.isPending}
