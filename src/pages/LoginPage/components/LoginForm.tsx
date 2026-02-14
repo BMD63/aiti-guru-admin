@@ -1,13 +1,15 @@
-import { Box, Button, Checkbox, FormControlLabel, IconButton, InputAdornment, Stack } from '@mui/material';
+import { useState } from 'react';
 import type { SubmitEventHandler } from 'react';
+import type { FieldErrors, UseFormRegister } from 'react-hook-form';
+
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
-import type { FieldErrors, UseFormRegister } from 'react-hook-form';
+
+import { Box, Button, Checkbox, FormControlLabel, IconButton, InputAdornment, Stack } from '@mui/material';
+
 import type { LoginFormValues } from '../../../features/auth/schemas/login.schema';
-
-
 import { FormField } from './FormField';
 
 type Props = {
@@ -15,11 +17,11 @@ type Props = {
   register: UseFormRegister<LoginFormValues>;
   errors: FieldErrors<LoginFormValues>;
   isPending: boolean;
-  showPassword: boolean;
-  togglePassword: () => void;
 };
 
-export function LoginForm({ onSubmit, register, errors, isPending, showPassword, togglePassword }: Props) {
+export function LoginForm({ onSubmit, register, errors, isPending }: Props) {
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <Box component="form" onSubmit={onSubmit} sx={{ width: '100%' }} noValidate>
       <Stack sx={{ width: '100%', maxWidth: 399, mx: 'auto', gap: 2 }}>
@@ -60,7 +62,7 @@ export function LoginForm({ onSubmit, register, errors, isPending, showPassword,
                 edge="end"
                 aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                 aria-pressed={showPassword}
-                onClick={togglePassword}
+                onClick={() => setShowPassword((v) => !v)}
                 disabled={isPending}
               >
                 {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
