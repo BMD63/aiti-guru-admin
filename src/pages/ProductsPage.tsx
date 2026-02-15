@@ -5,6 +5,7 @@ import { createProductColumns } from './ProductsPage/columns';
 import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
 import { PaginationFooter } from './ProductsPage/components/PaginationFooter';
 import { ProductsToolbar } from './ProductsPage/components/ProductsToolbar';
+import { ProductsHeaderActions } from './ProductsPage/components/ProductsHeaderActions';
 
 import {
   flexRender,
@@ -28,21 +29,15 @@ import {
   type CreateProductInput,
 } from '../features/auth/schemas/createProduct.schema';
 
-import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
-
 import {
   Box,
-  Button,
   Card,
   CardContent,
   CardHeader,
-  IconButton,
   LinearProgress,
   Menu,
   MenuItem,
   Snackbar,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -228,14 +223,10 @@ export function ProductsPage() {
               }}
               title={<Typography sx={{ fontWeight: 600 }}>Все позиции</Typography>}
               action={
-                <Stack direction="row" spacing={1}>
-                  <IconButton aria-label="refresh">
-                    <RefreshIcon />
-                  </IconButton>
-                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>
-                    Добавить
-                  </Button>
-                </Stack>
+                <ProductsHeaderActions
+                  onRefresh={() => queryClient.invalidateQueries({ queryKey: ['products'] })}
+                  onAdd={() => setOpen(true)}
+                />
               }
             />
 

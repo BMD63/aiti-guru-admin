@@ -36,7 +36,7 @@ export function AddProductDialog({ open, onClose, onSubmit, isSubmitting, regist
           />
 
           <TextField
-            label="Вендор"
+            label="Бренд"
             error={!!errors.brand}
             helperText={errors.brand?.message}
             disabled={isSubmitting}
