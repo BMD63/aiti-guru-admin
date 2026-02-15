@@ -1,5 +1,6 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { useSearchParamsState } from '../shared/hooks/useSearchParamsState';
 
 import SearchIcon from '@mui/icons-material/Search';
 import {
@@ -11,7 +12,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useMemo, useState, useEffect, useRef, } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
 import type { Product, ProductsResponse } from '../entities/product/api/getProducts';
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
@@ -110,10 +110,10 @@ export function ProductsPage() {
 
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { searchParams, getNumber, set: setParams } = useSearchParamsState();
+
   const { sortBy, order } = parseSort(searchParams);
-  const pageParam = Number(searchParams.get('page') ?? '1');
-  const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
+  const page = Math.max(1, getNumber('page', 1));
   const limit = 20;
   const skip = (page - 1) * limit;
   const { data, isFetching, isError, error } = useProductsQuery({
@@ -121,30 +121,22 @@ export function ProductsPage() {
     limit,
     skip,
   });
+
   const prevQRef = useRef(debouncedQ);
 
   useEffect(() => {
     if (prevQRef.current === debouncedQ) return;
 
     prevQRef.current = debouncedQ;
-
-    setSearchParams((prev) => {
-      const sp = new URLSearchParams(prev);
-      sp.set('page', '1');
-      return sp;
-    });
-  }, [debouncedQ, setSearchParams]);
-
+    setParams({ page: 1 }, { replace: true });
+  }, [debouncedQ, setParams]);
 
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / limit);
   const changePage = (nextPage: number) => {
-    setSearchParams((prev) => {
-      const sp = new URLSearchParams(prev);
-      sp.set('page', String(nextPage));
-      return sp;
-    });
+    setParams({ page: nextPage });
   };
+
 
   const currentIds = (data?.products ?? []).map((p) => p.id);
   const allChecked = currentIds.length > 0 && currentIds.every((id) => selectedIds.has(id));
@@ -218,22 +210,21 @@ export function ProductsPage() {
     const next = nextSorting(sortingState, columnId);
     const nextParams = sortingToParams(next);
 
-    setSearchParams((prev) => {
-      const sp = new URLSearchParams(prev);
-      if (nextParams.sortBy) {
-        sp.set('sortBy', nextParams.sortBy);
-        sp.set('order', nextParams.order ?? 'asc');
-        sp.set('page', '1');
+    if (nextParams.sortBy) {
+      setParams({
+        sortBy: nextParams.sortBy,
+        order: nextParams.order ?? 'asc',
+        page: 1,
+      });
+    } else {
+      setParams({
+        sortBy: null,
+        order: null,
+        page: 1,
+      });
+    }
 
-      } else {
-        sp.delete('sortBy');
-        sp.delete('order');
-        sp.set('page', '1');
 
-      }
-
-      return sp;
-    });
   };
 
   const renderSortHint = (columnId: SortableColumnId) => {
