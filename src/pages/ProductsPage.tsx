@@ -2,17 +2,18 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useSearchParamsState } from '../shared/hooks/useSearchParamsState';
 import { useProductsSorting } from './ProductsPage/hooks/useProductsSorting';
+import { useProductsSelection } from './ProductsPage/hooks/useProductsSelection';
+import { createProductColumns } from './ProductsPage/columns';
 
 import SearchIcon from '@mui/icons-material/Search';
 import {
-  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import { useMemo, useState, useEffect, useRef, } from 'react';
-import { PRODUCTS_PAGE } from './ProductsPage/hooks/constants';
+import { PRODUCTS_PAGE } from './ProductsPage/constants';
 import type { Product, ProductsResponse } from '../entities/product/api/getProducts';
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
@@ -28,7 +29,6 @@ import {
 } from '../features/auth/schemas/createProduct.schema';
 
 import AddIcon from '@mui/icons-material/Add';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
@@ -39,7 +39,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
@@ -73,8 +72,6 @@ export function ProductsPage() {
   const [toastMessage, setToastMessage] = useState('Товар успешно добавлен');
   const [toastSeverity, setToastSeverity] = useState<'success' | 'info'>('success');
 
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
 
   const {getNumber, set: setParams } = useSearchParamsState();
@@ -107,32 +104,6 @@ export function ProductsPage() {
     setParams({ page: nextPage });
   };
 
-
-  const currentIds = (data?.products ?? []).map((p) => p.id);
-  const allChecked = currentIds.length > 0 && currentIds.every((id) => selectedIds.has(id));
-  const someChecked = currentIds.some((id) => selectedIds.has(id)) && !allChecked;
-
-  const toggleAllCurrent = () => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (allChecked) {
-        currentIds.forEach((id) => next.delete(id));
-      } else {
-        currentIds.forEach((id) => next.add(id));
-      }
-      return next;
-    });
-  };
-
-  const toggleRow = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const openToast = (message: string, severity: 'success' | 'info' = 'info') => {
     setToastMessage(message);
     setToastSeverity(severity);
@@ -147,6 +118,13 @@ export function ProductsPage() {
   } = useForm<CreateProductInput, unknown, CreateProductFormValues>({
     resolver: zodResolver(createProductSchema),
   });
+  const {
+    selectedIds,
+    allChecked,
+    someChecked,
+    toggleAllCurrent,
+    toggleOne,
+  } = useProductsSelection(data?.products ?? []);
 
   const onCreate = (values: CreateProductFormValues) => {
     const newProduct: Product = {
@@ -158,7 +136,8 @@ export function ProductsPage() {
     };
 
     queryClient.setQueryData<ProductsResponse>(
-      ['products', { q: debouncedQ, limit: 20, skip: 0 }],
+      ['products', { q: debouncedQ, limit, skip }],
+
       (old) => {
         if (!old) return old;
         return {
@@ -174,136 +153,29 @@ export function ProductsPage() {
     openToast('Товар успешно добавлен', 'success');
   };
 
-  const handleOpenMenu = (e: React.MouseEvent<HTMLElement>) => {
+  const handleOpenMenu = (e: React.MouseEvent<HTMLElement>, _id: number) => {
     setMenuAnchorEl(e.currentTarget);
   };
+
 
   const handleCloseMenu = () => {
     setMenuAnchorEl(null);
   };
+  const columns = useMemo(
+  () =>
+    createProductColumns({
+      selectedIds,
+      toggleAllCurrent,
+      toggleOne,
+      allChecked,
+      someChecked,
+      openToast,
+      handleOpenMenu,
+    }),
+  [selectedIds, allChecked, someChecked, toggleAllCurrent, toggleOne, openToast, handleOpenMenu],
+);
 
-  const columns = useMemo<ColumnDef<Product>[]>(
-    () => [
-      {
-        id: 'select',
-        header: () => (
-          <Checkbox
-            checked={allChecked}
-            indeterminate={someChecked}
-            onChange={toggleAllCurrent}
-            size="small"
-          />
-        ),
-        cell: ({ row }) => {
-          const p = row.original;
-          const checked = selectedIds.has(p.id);
-          return <Checkbox checked={checked} onChange={() => toggleRow(p.id)} size="small" />;
-        },
-        meta: { align: 'center', width: 60 },
-      },
 
-      {
-        id: 'title',
-        accessorKey: 'title',
-        header: 'Название',
-        cell: (ctx) => ctx.getValue<string>(),
-        meta: { align: 'left', width: 350 },
-      },
-
-      {
-        id: 'price',
-        accessorKey: 'price',
-        header: 'Цена',
-        cell: (ctx) => ctx.getValue<number>(),
-        meta: { align: 'right', width: 140 },
-      },
-
-      {
-        id: 'rating',
-        accessorKey: 'rating',
-        header: 'Рейтинг',
-        cell: (ctx) => {
-          const value = ctx.getValue<number>();
-          return (
-            <Typography
-              component="span"
-              color={value < 3 ? 'error.main' : 'text.primary'}
-              fontWeight={value < 3 ? 600 : 400}
-            >
-              {value}
-            </Typography>
-          );
-        },
-        meta: { align: 'center', width: 120 },
-      },
-
-      {
-        id: 'brand',
-        accessorKey: 'brand',
-        header: 'Бренд',
-        cell: (ctx) => ctx.getValue<string>() ?? '—',
-        meta: { align: 'left', width: 220 },
-      },
-
-      {
-        id: 'plus',
-        header: '',
-        cell: () => (
-          <Box
-            onClick={() => openToast('Добавлено', 'info')}
-            sx={{
-              width: 52,
-              height: 27,
-              bgcolor: '#242EDB',
-              borderRadius: '23px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: '#1F27C8',
-              },
-            }}
-          >
-            <AddIcon sx={{ color: '#FFFFFF', fontSize: 16 }} />
-          </Box>
-        ),
-        meta: { align: 'center', width: 80 },
-      },
-
-      {
-        id: 'more',
-        header: '',
-        cell: () => (
-          <IconButton
-            size="small"
-            onClick={(e) => handleOpenMenu(e)}
-            sx={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              border: '2px solid #CFCFCF',
-              backgroundColor: '#FFFFFF',
-              p: 0,
-              '&:hover': {
-                backgroundColor: '#F3F3F3',
-              },
-            }}
-          >
-            <MoreHorizIcon
-              sx={{
-                fontSize: 18,
-                color: '#9E9E9E',
-              }}
-            />
-          </IconButton>
-        ),
-        meta: { align: 'center', width: 80 },
-      },
-
-    ],
-    [allChecked, someChecked, selectedIds],
-  );
 
   const table = useReactTable({
     data: data?.products ?? [],
