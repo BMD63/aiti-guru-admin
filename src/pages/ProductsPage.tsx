@@ -4,8 +4,8 @@ import { useProductsSelection } from './ProductsPage/hooks/useProductsSelection'
 import { createProductColumns } from './ProductsPage/columns';
 import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
 import { PaginationFooter } from './ProductsPage/components/PaginationFooter';
+import { ProductsToolbar } from './ProductsPage/components/ProductsToolbar';
 
-import SearchIcon from '@mui/icons-material/Search';
 import {
   flexRender,
   getCoreRowModel,
@@ -38,7 +38,6 @@ import {
   CardContent,
   CardHeader,
   IconButton,
-  InputAdornment,
   LinearProgress,
   Menu,
   MenuItem,
@@ -49,7 +48,6 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  TextField,
   Typography,
 } from '@mui/material';
 import AlertMUI from '@mui/material/Alert';
@@ -212,54 +210,7 @@ export function ProductsPage() {
 
       <Box sx={{ px: `${PRODUCTS_PAGE.layout.sidePadding}px`, display: 'flex', flexDirection: 'column', gap: '30px' }}>
         {/* Навигационная панель */}
-        <Box
-          sx={{
-            height: PRODUCTS_PAGE.layout.navbarHeight,
-            bgcolor: '#FFFFFF',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: '30px',
-            gap: '10px',
-          }}
-        >
-          <Typography
-            sx={{
-              fontSize: 20,
-              fontWeight: 700,
-              letterSpacing: '-0.015em',
-              color: '#232323',
-            }}
-          >
-            Товары
-          </Typography>
-
-          <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <TextField
-              size="small"
-              placeholder="Найти"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              sx={{
-                width: '100%',
-                maxWidth: PRODUCTS_PAGE.search.inputWidth,
-                '& .MuiOutlinedInput-root': { borderRadius: 2, height: 44 },
-              }}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Box>
-
-          <Box sx={{ width: 24 }} />
-        </Box>
+        <ProductsToolbar q={q} onChangeQ={setQ} />
 
         {/* Контент */}
         <Box sx={{ width: '100%'}}>
