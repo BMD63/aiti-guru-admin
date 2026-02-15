@@ -1,10 +1,10 @@
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useSearchParamsState } from '../shared/hooks/useSearchParamsState';
 import { useProductsSorting } from './ProductsPage/hooks/useProductsSorting';
 import { useProductsSelection } from './ProductsPage/hooks/useProductsSelection';
 import { createProductColumns } from './ProductsPage/columns';
 import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
+import { PaginationFooter } from './ProductsPage/components/PaginationFooter';
+
 import SearchIcon from '@mui/icons-material/Search';
 import {
   flexRender,
@@ -30,8 +30,6 @@ import {
 
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import LastPageIcon from '@mui/icons-material/LastPage';
 
 import {
   Box,
@@ -377,89 +375,16 @@ export function ProductsPage() {
                       </TableBody>
                     </Table>
                   </Box>
-                  <Box
-                    sx={{
-                      height: 52,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      py: '11px',
-                      mt: 1,
-                      borderTop: '1px solid',
-                      borderColor: 'divider',
-                    }}
-                  >
-                    <Typography sx={{ fontSize: 14, color: '#6B6B6B' }}>
-                      Показано: {skip + 1}-{Math.min(skip + limit, total)} из {total}
-                    </Typography>
+                  <PaginationFooter
+                    page={page}
+                    totalPages={totalPages}
+                    total={total}
+                    skip={skip}
+                    limit={limit}
+                    pagesToShow={pagesToShow}
+                    onChangePage={changePage}
+                  />
 
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <IconButton
-                        size="small"
-                        onClick={() => changePage(1)}
-                        disabled={page <= 1}
-                        aria-label="first page"
-                      >
-                        <FirstPageIcon fontSize="small" />
-                      </IconButton>
-
-                      <IconButton
-                        size="small"
-                        onClick={() => changePage(page - 1)}
-                        disabled={page <= 1}
-                        aria-label="previous page"
-                      >
-                        <ChevronLeftIcon fontSize="small" />
-                      </IconButton>
-
-                      <Stack direction="row" spacing={0.5} alignItems="center">
-                        {pagesToShow.map((p, idx) =>
-                          p === 'dots' ? (
-                            <Typography key={`dots-${idx}`} sx={{ px: 1, color: '#6B6B6B' }}>
-                              …
-                            </Typography>
-                          ) : (
-                            <Button
-                              key={p}
-                              onClick={() => changePage(p)}
-                              variant={p === page ? 'contained' : 'text'}
-                              size="small"
-                              sx={{
-                                minWidth: 34,
-                                height: 32,
-                                borderRadius: 2,
-                                textTransform: 'none',
-                                px: 1,
-                              }}
-                            >
-                              {p}
-                            </Button>
-                          ),
-                        )}
-                      </Stack>
-
-
-                      <IconButton
-                        size="small"
-                        onClick={() => changePage(page + 1)}
-                        disabled={page >= totalPages}
-                        aria-label="next page"
-                      >
-                        <ChevronRightIcon fontSize="small" />
-                      </IconButton>
-
-                      <IconButton
-                        size="small"
-                        onClick={() => changePage(totalPages)}
-                        disabled={page >= totalPages}
-                        aria-label="last page"
-                      >
-                        <LastPageIcon fontSize="small" />
-                      </IconButton>
-                    </Stack>
-
-
-                  </Box>
                 </>
               )}
             </CardContent>
