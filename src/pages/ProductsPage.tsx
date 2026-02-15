@@ -1,18 +1,18 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useSearchParamsState } from '../shared/hooks/useSearchParamsState';
+import { useProductsSorting } from './ProductsPage/hooks/useProductsSorting';
 
 import SearchIcon from '@mui/icons-material/Search';
 import {
   type ColumnDef,
-  type SortingState,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import { useMemo, useState, useEffect, useRef, } from 'react';
-
+import { PRODUCTS_PAGE } from './ProductsPage/hooks/constants';
 import type { Product, ProductsResponse } from '../entities/product/api/getProducts';
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
@@ -61,43 +61,10 @@ import {
 } from '@mui/material';
 import AlertMUI from '@mui/material/Alert';
 
-type SortableColumnId = 'title' | 'price' | 'rating' | 'brand';
-type SortOrder = 'asc' | 'desc';
-
-function parseSort(searchParams: URLSearchParams): { sortBy: SortableColumnId | null; order: SortOrder } {
-  const sortByRaw = searchParams.get('sortBy');
-  const orderRaw = searchParams.get('order');
-
-  const sortBy =
-    sortByRaw === 'title' || sortByRaw === 'price' || sortByRaw === 'rating' || sortByRaw === 'brand'
-      ? sortByRaw
-      : null;
-
-  const order: SortOrder = orderRaw === 'desc' ? 'desc' : 'asc';
-  return { sortBy, order };
-}
-
-function toSortingState(sortBy: SortableColumnId | null, order: SortOrder): SortingState {
-  if (!sortBy) return [];
-  return [{ id: sortBy, desc: order === 'desc' }];
-}
-
-function nextSorting(current: SortingState, columnId: SortableColumnId): SortingState {
-  const active = current[0];
-  if (!active || active.id !== columnId) return [{ id: columnId, desc: false }]; // asc
-  if (active.desc === false) return [{ id: columnId, desc: true }]; // desc
-  return []; // off
-}
-
-function sortingToParams(sorting: SortingState): { sortBy?: string; order?: string } {
-  const s = sorting[0];
-  if (!s) return {};
-  return { sortBy: String(s.id), order: s.desc ? 'desc' : 'asc' };
-}
-
 export function ProductsPage() {
   const [q, setQ] = useState('');
-  const debouncedQ = useDebouncedValue(q, 400);
+  const debouncedQ = useDebouncedValue(q, PRODUCTS_PAGE.search.debounceMs);
+
 
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -110,17 +77,20 @@ export function ProductsPage() {
 
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
 
-  const { searchParams, getNumber, set: setParams } = useSearchParamsState();
+  const {getNumber, set: setParams } = useSearchParamsState();
 
-  const { sortBy, order } = parseSort(searchParams);
   const page = Math.max(1, getNumber('page', 1));
-  const limit = 20;
+  const limit = PRODUCTS_PAGE.limit;
+
   const skip = (page - 1) * limit;
   const { data, isFetching, isError, error } = useProductsQuery({
     q: debouncedQ,
     limit,
     skip,
   });
+
+  const { sortingState, toggleSort, currentSort, currentOrder, sortableColumns } = useProductsSorting();
+
 
   const prevQRef = useRef(debouncedQ);
 
@@ -202,35 +172,6 @@ export function ProductsPage() {
     reset();
     setOpen(false);
     openToast('Товар успешно добавлен', 'success');
-  };
-
-  const sortingState = useMemo(() => toSortingState(sortBy, order), [sortBy, order]);
-
-  const handleHeaderClick = (columnId: SortableColumnId) => {
-    const next = nextSorting(sortingState, columnId);
-    const nextParams = sortingToParams(next);
-
-    if (nextParams.sortBy) {
-      setParams({
-        sortBy: nextParams.sortBy,
-        order: nextParams.order ?? 'asc',
-        page: 1,
-      });
-    } else {
-      setParams({
-        sortBy: null,
-        order: null,
-        page: 1,
-      });
-    }
-
-
-  };
-
-  const renderSortHint = (columnId: SortableColumnId) => {
-    const s = sortingState[0];
-    if (!s || s.id !== columnId) return null;
-    return s.desc ? ' ↓' : ' ↑';
   };
 
   const handleOpenMenu = (e: React.MouseEvent<HTMLElement>) => {
@@ -399,14 +340,15 @@ export function ProductsPage() {
   }, [page, totalPages]);
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#F6F6F6', pt: '20px' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#F6F6F6', pt: `${PRODUCTS_PAGE.layout.topPadding}px` }}>
+
       {isFetching && <LinearProgress />}
 
-      <Box sx={{ px: '30px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <Box sx={{ px: `${PRODUCTS_PAGE.layout.sidePadding}px`, display: 'flex', flexDirection: 'column', gap: '30px' }}>
         {/* Навигационная панель */}
         <Box
           sx={{
-            height: 105,
+            height: PRODUCTS_PAGE.layout.navbarHeight,
             bgcolor: '#FFFFFF',
             borderRadius: '10px',
             display: 'flex',
@@ -434,7 +376,8 @@ export function ProductsPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               sx={{
-                width: 'min(560px, 100%)',
+                width: '100%',
+                maxWidth: PRODUCTS_PAGE.search.inputWidth,
                 '& .MuiOutlinedInput-root': { borderRadius: 2, height: 44 },
               }}
               slotProps={{
@@ -488,7 +431,7 @@ export function ProductsPage() {
                     <Table
                       size="medium"
                       sx={{
-                        minWidth: 1100,
+                        minWidth: PRODUCTS_PAGE.layout.cardMinTableWidth,
                         tableLayout: 'fixed',
                         '& .MuiTableCell-root': {
                           py: 2,
@@ -510,14 +453,13 @@ export function ProductsPage() {
                         {table.getHeaderGroups().map((hg) => (
                           <TableRow key={hg.id}>
                             {hg.headers.map((header) => {
-                              const id = header.column.id as SortableColumnId;
-                              const sortable = id === 'title' || id === 'price' || id === 'rating' || id === 'brand';
-
+                              const id = header.column.id;
+                              const sortable = sortableColumns.includes(id as any);
                               return (
                                 <TableCell
                                   key={header.id}
                                   align={header.column.columnDef.meta?.align}
-                                  onClick={sortable ? () => handleHeaderClick(id) : undefined}
+                                  onClick={sortable ? () => toggleSort(id as any) : undefined}
                                   sx={{
                                     width: header.column.columnDef.meta?.width,
                                     cursor: sortable ? 'pointer' : 'default',
@@ -527,7 +469,8 @@ export function ProductsPage() {
                                 >
 
                                   {flexRender(header.column.columnDef.header, header.getContext())}
-                                  {sortable && renderSortHint(id)}
+                                  {sortable && currentSort === id && (currentOrder === 'desc' ? ' ↓' : ' ↑')}
+
                                 </TableCell>
                               );
                             })}
