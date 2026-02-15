@@ -4,7 +4,7 @@ import { useSearchParamsState } from '../shared/hooks/useSearchParamsState';
 import { useProductsSorting } from './ProductsPage/hooks/useProductsSorting';
 import { useProductsSelection } from './ProductsPage/hooks/useProductsSelection';
 import { createProductColumns } from './ProductsPage/columns';
-
+import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
 import SearchIcon from '@mui/icons-material/Search';
 import {
   flexRender,
@@ -39,10 +39,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   IconButton,
   InputAdornment,
   LinearProgress,
@@ -471,36 +467,14 @@ export function ProductsPage() {
         </Box>
       </Box>
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Добавить товар</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Stack spacing={2}>
-            <TextField
-              label="Наименование"
-              error={!!errors.title}
-              helperText={errors.title?.message}
-              {...register('title')}
-            />
-            <TextField
-              label="Цена"
-              type="number"
-              error={!!errors.price}
-              helperText={errors.price?.message}
-              {...register('price', { valueAsNumber: true })}
-            />
-            <TextField label="Вендор" error={!!errors.brand} helperText={errors.brand?.message} {...register('brand')} />
-            <TextField label="Артикул" error={!!errors.sku} helperText={errors.sku?.message} {...register('sku')} />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpen(false)} color="inherit">
-            Отмена
-          </Button>
-          <Button variant="contained" onClick={handleSubmit(onCreate)}>
-            Сохранить
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AddProductDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        onSubmit={handleSubmit(onCreate)}
+        isSubmitting={isFetching}
+        register={register}
+        errors={errors}
+      />
 
       <Menu
         anchorEl={menuAnchorEl}
