@@ -1,27 +1,26 @@
 import { useSearchParamsState } from '../shared/hooks/useSearchParamsState';
 import { useProductsSorting } from './ProductsPage/hooks/useProductsSorting';
 import { useProductsSelection } from './ProductsPage/hooks/useProductsSelection';
+import { useProductsUIOverlays } from './ProductsPage/hooks/useProductsUIOverlays';
+import { useAddProduct } from './ProductsPage/hooks/useAddProduct';
+
 import { createProductColumns } from './ProductsPage/columns';
 import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
 import { PaginationFooter } from './ProductsPage/components/PaginationFooter';
 import { ProductsToolbar } from './ProductsPage/components/ProductsToolbar';
 import { ProductsHeaderActions } from './ProductsPage/components/ProductsHeaderActions';
 
-import {
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import { useMemo, useState, useEffect, useRef, } from 'react';
+import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable, } from '@tanstack/react-table';
+import { useQueryClient } from '@tanstack/react-query';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+
 import { PRODUCTS_PAGE } from './ProductsPage/constants';
-import type { Product, ProductsResponse } from '../entities/product/api/getProducts';
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from '@tanstack/react-query';
 
 import {
   createProductSchema,
@@ -51,22 +50,14 @@ export function ProductsPage() {
   const [q, setQ] = useState('');
   const debouncedQ = useDebouncedValue(q, PRODUCTS_PAGE.search.debounceMs);
 
-
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
-
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('Товар успешно добавлен');
-  const [toastSeverity, setToastSeverity] = useState<'success' | 'info'>('success');
-
-  const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
-
-  const {getNumber, set: setParams } = useSearchParamsState();
+  const { getNumber, set: setParams } = useSearchParamsState();
 
   const page = Math.max(1, getNumber('page', 1));
   const limit = PRODUCTS_PAGE.limit;
-
   const skip = (page - 1) * limit;
+
   const { data, isFetching, isError, error } = useProductsQuery({
     q: debouncedQ,
     limit,
@@ -75,27 +66,33 @@ export function ProductsPage() {
 
   const { sortingState, toggleSort, currentSort, currentOrder, sortableColumns } = useProductsSorting();
 
+  const {
+    toastOpen,
+    toastMessage,
+    toastSeverity,
+    openToast,
+    closeToast,
+    menuAnchorEl,
+    openMenu,
+    closeMenu,
+  } = useProductsUIOverlays();
 
   const prevQRef = useRef(debouncedQ);
 
   useEffect(() => {
     if (prevQRef.current === debouncedQ) return;
-
     prevQRef.current = debouncedQ;
     setParams({ page: 1 }, { replace: true });
   }, [debouncedQ, setParams]);
 
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / limit);
+
   const changePage = (nextPage: number) => {
     setParams({ page: nextPage });
   };
 
-  const openToast = (message: string, severity: 'success' | 'info' = 'info') => {
-    setToastMessage(message);
-    setToastSeverity(severity);
-    setToastOpen(true);
-  };
+  const { selectedIds, allChecked, someChecked, toggleAllCurrent, toggleOne } = useProductsSelection(data?.products ?? []);
 
   const {
     register,
@@ -105,64 +102,32 @@ export function ProductsPage() {
   } = useForm<CreateProductInput, unknown, CreateProductFormValues>({
     resolver: zodResolver(createProductSchema),
   });
-  const {
-    selectedIds,
-    allChecked,
-    someChecked,
-    toggleAllCurrent,
-    toggleOne,
-  } = useProductsSelection(data?.products ?? []);
 
-  const onCreate = (values: CreateProductFormValues) => {
-    const newProduct: Product = {
-      id: Date.now(),
-      title: values.title,
-      price: values.price,
-      rating: 0,
-      brand: values.brand,
-    };
+  const productsQueryKey = useMemo(
+    () => ['products', { q: debouncedQ, limit, skip }] as const,
+    [debouncedQ, limit, skip],
+  );
 
-    queryClient.setQueryData<ProductsResponse>(
-      ['products', { q: debouncedQ, limit, skip }],
+  const { addProduct } = useAddProduct({
+    queryKey: productsQueryKey,
+    onClose: () => setOpen(false),
+    onToast: openToast,
+    reset,
+  });
 
-      (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          products: [newProduct, ...old.products],
-          total: old.total + 1,
-        };
-      },
-    );
-
-    reset();
-    setOpen(false);
-    openToast('Товар успешно добавлен', 'success');
-  };
-
-  const handleOpenMenu = (e: React.MouseEvent<HTMLElement>, _id: number) => {
-    setMenuAnchorEl(e.currentTarget);
-  };
-
-
-  const handleCloseMenu = () => {
-    setMenuAnchorEl(null);
-  };
   const columns = useMemo(
-  () =>
-    createProductColumns({
-      selectedIds,
-      toggleAllCurrent,
-      toggleOne,
-      allChecked,
-      someChecked,
-      openToast,
-      handleOpenMenu,
-    }),
-  [selectedIds, allChecked, someChecked, toggleAllCurrent, toggleOne, openToast, handleOpenMenu],
-);
-
-
+    () =>
+      createProductColumns({
+        selectedIds,
+        toggleAllCurrent,
+        toggleOne,
+        allChecked,
+        someChecked,
+        openToast,
+        handleOpenMenu: openMenu,
+      }),
+    [selectedIds, toggleAllCurrent, toggleOne, allChecked, someChecked, openToast, openMenu],
+  );
 
   const table = useReactTable({
     data: data?.products ?? [],
@@ -170,8 +135,11 @@ export function ProductsPage() {
     state: { sorting: sortingState },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    manualSorting: false,
   });
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+  };
+
   const pagesToShow = useMemo(() => {
     const last = Math.max(totalPages, 1);
     const current = Math.min(Math.max(page, 1), last);
@@ -188,9 +156,7 @@ export function ProductsPage() {
     const end = Math.min(last - 1, current + 1);
 
     if (start > 2) push('dots');
-
     for (let p = start; p <= end; p += 1) push(p);
-
     if (end < last - 1) push('dots');
 
     if (last > 1) push(last);
@@ -200,33 +166,22 @@ export function ProductsPage() {
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F6F6F6', pt: `${PRODUCTS_PAGE.layout.topPadding}px` }}>
-
       {isFetching && <LinearProgress />}
 
       <Box sx={{ px: `${PRODUCTS_PAGE.layout.sidePadding}px`, display: 'flex', flexDirection: 'column', gap: '30px' }}>
-        {/* Навигационная панель */}
         <ProductsToolbar q={q} onChangeQ={setQ} />
 
-        {/* Контент */}
-        <Box sx={{ width: '100%'}}>
-          <Card
-            sx={{
-              borderRadius: '10px',
-              boxShadow: '0px 4px 20px rgba(0,0,0,0.03)',
-            }}
-          >
+        <Box sx={{ width: '100%' }}>
+          <Card sx={{ borderRadius: '10px', boxShadow: '0px 4px 20px rgba(0,0,0,0.03)' }}>
             <CardHeader
-              sx={{
-                px: 3,
-                pt: 3,
-                pb: 2,
-              }}
+              sx={{ px: 3, pt: 3, pb: 2 }}
               title={<Typography sx={{ fontWeight: 600 }}>Все позиции</Typography>}
               action={
                 <ProductsHeaderActions
-                  onRefresh={() => queryClient.invalidateQueries({ queryKey: ['products'] })}
+                  onRefresh={handleRefresh}
                   onAdd={() => setOpen(true)}
                 />
+
               }
             />
 
@@ -241,13 +196,9 @@ export function ProductsPage() {
                       sx={{
                         minWidth: PRODUCTS_PAGE.layout.cardMinTableWidth,
                         tableLayout: 'fixed',
-                        '& .MuiTableCell-root': {
-                          py: 2,
-                        },
+                        '& .MuiTableCell-root': { py: 2 },
                       }}
                     >
-
-
                       <TableHead
                         sx={{
                           backgroundColor: '#F9F9F9',
@@ -263,6 +214,7 @@ export function ProductsPage() {
                             {hg.headers.map((header) => {
                               const id = header.column.id;
                               const sortable = sortableColumns.includes(id as any);
+
                               return (
                                 <TableCell
                                   key={header.id}
@@ -275,10 +227,8 @@ export function ProductsPage() {
                                     fontWeight: 600,
                                   }}
                                 >
-
                                   {flexRender(header.column.columnDef.header, header.getContext())}
                                   {sortable && currentSort === id && (currentOrder === 'desc' ? ' ↓' : ' ↑')}
-
                                 </TableCell>
                               );
                             })}
@@ -288,15 +238,7 @@ export function ProductsPage() {
 
                       <TableBody>
                         {table.getRowModel().rows.map((row) => (
-                          <TableRow
-                            key={row.id}
-                            sx={{
-                              '&:hover': {
-                                backgroundColor: '#FAFAFA',
-                              },
-                            }}
-                          >
-
+                          <TableRow key={row.id} sx={{ '&:hover': { backgroundColor: '#FAFAFA' } }}>
                             {row.getVisibleCells().map((cell) => (
                               <TableCell
                                 key={cell.id}
@@ -308,7 +250,6 @@ export function ProductsPage() {
                                   textOverflow: 'ellipsis',
                                 }}
                               >
-
                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                               </TableCell>
                             ))}
@@ -317,6 +258,7 @@ export function ProductsPage() {
                       </TableBody>
                     </Table>
                   </Box>
+
                   <PaginationFooter
                     page={page}
                     totalPages={totalPages}
@@ -326,7 +268,6 @@ export function ProductsPage() {
                     pagesToShow={pagesToShow}
                     onChangePage={changePage}
                   />
-
                 </>
               )}
             </CardContent>
@@ -337,22 +278,16 @@ export function ProductsPage() {
       <AddProductDialog
         open={open}
         onClose={() => setOpen(false)}
-        onSubmit={handleSubmit(onCreate)}
+        onSubmit={handleSubmit(addProduct)}
         isSubmitting={isFetching}
         register={register}
         errors={errors}
       />
 
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        onClose={handleCloseMenu}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
+      <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={closeMenu}>
         <MenuItem
           onClick={() => {
-            handleCloseMenu();
+            closeMenu();
             openToast('Скоро будет: редактирование', 'info');
           }}
         >
@@ -360,7 +295,7 @@ export function ProductsPage() {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            handleCloseMenu();
+            closeMenu();
             openToast('Скоро будет: удаление', 'info');
           }}
         >
@@ -371,10 +306,10 @@ export function ProductsPage() {
       <Snackbar
         open={toastOpen}
         autoHideDuration={3000}
-        onClose={() => setToastOpen(false)}
+        onClose={closeToast}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <AlertMUI onClose={() => setToastOpen(false)} severity={toastSeverity} variant="filled">
+        <AlertMUI onClose={closeToast} severity={toastSeverity} variant="filled">
           {toastMessage}
         </AlertMUI>
       </Snackbar>

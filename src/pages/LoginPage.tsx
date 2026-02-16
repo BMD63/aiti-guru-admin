@@ -33,7 +33,7 @@ export function LoginPage() {
         p: 3,
       }}
     >
-      {/* Outer frame (radius 40) */}
+
       <Box
         sx={{
           borderRadius: '40px',
@@ -41,7 +41,7 @@ export function LoginPage() {
           p: '6px',
         }}
       >
-        {/* Inner frame (radius 34) */}
+
         <Box
           sx={{
             width: LOGIN_UI.innerWidth,
@@ -64,7 +64,6 @@ export function LoginPage() {
           <Stack sx={{ width: '100%', gap: '32px', alignItems: 'center' }}>
             <LogoBadge />
 
-            {/* Title + subtitle */}
             <Box sx={{ width: '100%' }}>
               <Typography sx={{ fontSize: 20, fontWeight: 700, textAlign: 'center' }}>
                 {LOGIN_TEXT.title}
