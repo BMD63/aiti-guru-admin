@@ -2,7 +2,6 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Box, Checkbox, IconButton, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import type { MouseEvent } from 'react';
 
 import type { Product } from '../../entities/product/api/getProducts';
 
@@ -13,7 +12,7 @@ type Params = {
   allChecked: boolean;
   someChecked: boolean;
   openToast: (message: string, severity: 'success' | 'info') => void;
-  handleOpenMenu: (e: MouseEvent<HTMLElement>, id: number) => void;
+  handleOpenMenu: (e: React.MouseEvent<HTMLElement>, id: number) => void;
 };
 
 export function createProductColumns({
@@ -106,11 +105,16 @@ export function createProductColumns({
       id: 'actions',
       header: '',
       cell: ({ row }) => (
-        <IconButton size="small" onClick={(e) => handleOpenMenu(e, row.original.id)}>
+        <IconButton
+          size="small"
+          aria-label="actions"
+          onClick={(e) => handleOpenMenu(e, row.original.id)}
+        >
           <MoreHorizIcon fontSize="small" />
         </IconButton>
       ),
       meta: { align: 'center', width: 80 } as any,
     },
+
   ];
 }

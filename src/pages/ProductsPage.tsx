@@ -141,20 +141,10 @@ export function ProductsPage() {
       allChecked,
       someChecked,
       openToast,
-      handleOpenMenu: openMenu, 
+      handleOpenMenu: openMenu,
     }),
-  [
-    selectedIds,
-    allChecked,
-    someChecked,
-    toggleAllCurrent,
-    toggleOne,
-    openToast,
-    openMenu,
-  ],
+  [selectedIds, allChecked, someChecked, toggleAllCurrent, toggleOne, openToast, openMenu],
 );
-
-
   const table = useReactTable({
     data: data?.products ?? [],
     columns,
@@ -274,7 +264,14 @@ export function ProductsPage() {
         errors={errors}
       />
 
-      <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={closeMenu}>
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={closeMenu}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        keepMounted
+      >
         <MenuItem onClick={() => { closeMenu(); openToast('Редактирование скоро', 'info'); }}>
           Редактировать
         </MenuItem>

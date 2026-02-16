@@ -18,12 +18,18 @@ export function useProductsUIOverlays() {
 
   // menu
   const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+  const [menuRowId, setMenuRowId] = useState<number | null>(null);
 
-  const openMenu = (e: React.MouseEvent<HTMLElement>, _id?: number) => {
+  const openMenu = (e: React.MouseEvent<HTMLElement>, id: number) => {
+    e.stopPropagation();
     setMenuAnchorEl(e.currentTarget);
+    setMenuRowId(id);
   };
 
-  const closeMenu = () => setMenuAnchorEl(null);
+  const closeMenu = () => {
+    setMenuAnchorEl(null);
+    setMenuRowId(null);
+  };
 
   return {
     toastOpen,
@@ -33,6 +39,7 @@ export function useProductsUIOverlays() {
     closeToast,
 
     menuAnchorEl,
+    menuRowId,
     openMenu,
     closeMenu,
   };
