@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getProducts } from '../api/getProducts';
 import { searchProducts } from '../api/searchProducts';
+import { productsQueryKey } from './queryKeys';
 
 type Params = {
   q?: string;
@@ -10,10 +11,14 @@ type Params = {
 
 export function useProductsQuery(params: Params) {
   const q = (params.q ?? '').trim();
+  const { limit, skip } = params;
 
   return useQuery({
-    queryKey: ['products', { ...params, q }],
-    queryFn: () => (q ? searchProducts({ q, limit: params.limit, skip: params.skip }) : getProducts(params)),
+    queryKey: productsQueryKey({ q, limit, skip }),
+    queryFn: () =>
+      q
+        ? searchProducts({ q, limit, skip })
+        : getProducts({ limit, skip }),
     staleTime: 30_000,
   });
 }
