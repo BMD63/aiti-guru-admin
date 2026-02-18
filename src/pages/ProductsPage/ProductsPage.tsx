@@ -2,24 +2,24 @@ import { useMemo, useState, useCallback } from 'react';
 import { useReactTable, getCoreRowModel, getSortedRowModel } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { PRODUCTS_PAGE } from './ProductsPage/constants';
-import { useSearchParamsState } from '../shared/hooks/useSearchParamsState';
-import { useProductsSorting } from './ProductsPage/hooks/useProductsSorting';
-import { useProductsSelection } from './ProductsPage/hooks/useProductsSelection';
-import { useProductsUIOverlays } from './ProductsPage/hooks/useProductsUIOverlays';
-import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
-import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
-import { productsQueryKey } from '../entities/product/queries/queryKeys';
-import { useAddProduct } from './ProductsPage/hooks/useAddProduct';
+import { PRODUCTS_PAGE } from './constants';
+import { useSearchParamsState } from '../../shared/hooks/useSearchParamsState';
+import { useProductsSorting } from './hooks/useProductsSorting';
+import { useProductsSelection } from './hooks/useProductsSelection';
+import { useProductsUIOverlays } from './hooks/useProductsUIOverlays';
+import { useProductsQuery } from '../../entities/product/queries/useProductsQuery';
+import { useDebouncedValue } from '../../shared/hooks/useDebouncedValue';
+import { productsQueryKey } from '../../entities/product/queries/queryKeys';
+import { useAddProduct } from './hooks/useAddProduct';
 
-import { DataTable } from '../shared/ui/DataTable';
+import { DataTable } from '../../shared/ui/DataTable';
 
-import { createProductColumns } from './ProductsPage/columns';
-import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
-import { PaginationFooter } from './ProductsPage/components/PaginationFooter';
-import { ProductsToolbar } from './ProductsPage/components/ProductsToolbar';
-import { ProductsHeaderActions } from './ProductsPage/components/ProductsHeaderActions';
-import { ProductActionsMenu } from './ProductsPage/components/ProductActionsMenu';
+import { createProductColumns } from './columns';
+import { AddProductDialog } from './components/AddProductDialog';
+import { PaginationFooter } from './components/PaginationFooter';
+import { ProductsToolbar } from './components/ProductsToolbar';
+import { ProductsHeaderActions } from './components/ProductsHeaderActions';
+import { ProductActionsMenu } from './components/ProductActionsMenu';
 
 import {
   Box,

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'; // 1. Используем Link для навигации
-import { Divider, LogoBadge, LoginForm } from './LoginPage/components';
-import { LOGIN_TEXT } from './LoginPage/constants';
-import { useLoginForm } from './LoginPage/hooks/useLoginForm';
-import { getErrorMessage } from  '../shared/lib/getErrorMessage';
+import { Divider, LogoBadge, LoginForm } from './components';
+import { LOGIN_TEXT } from './constants';
+import { useLoginForm } from './hooks/useLoginForm';
+import { getErrorMessage } from  '../../shared/lib/getErrorMessage';
 
 import { Alert, Box, Stack, Typography } from '@mui/material';
 
