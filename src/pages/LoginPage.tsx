@@ -1,24 +1,17 @@
+import { Link } from 'react-router-dom'; // 1. Используем Link для навигации
 import { Divider, LogoBadge, LoginForm } from './LoginPage/components';
-import { LOGIN_UI, LOGIN_TEXT } from './LoginPage/constants';
+import { LOGIN_TEXT } from './LoginPage/constants';
 import { useLoginForm } from './LoginPage/hooks/useLoginForm';
+import { getErrorMessage } from  '../shared/lib/getErrorMessage';
 
 import { Alert, Box, Stack, Typography } from '@mui/material';
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  if (error && typeof error === 'object' && 'message' in error) {
-    const msg = (error as { message?: unknown }).message;
-    if (typeof msg === 'string') return msg;
-  }
-  return 'Не удалось выполнить вход';
-}
-
 export function LoginPage() {
-    const {
+  const {
     register,
     formState: { errors },
-    mutation,
+    isLoading, 
+    error,    
     onSubmit,
   } = useLoginForm();
 
@@ -33,7 +26,6 @@ export function LoginPage() {
         p: 3,
       }}
     >
-
       <Box
         sx={{
           borderRadius: '40px',
@@ -41,12 +33,11 @@ export function LoginPage() {
           p: '6px',
         }}
       >
-
         <Box
           sx={{
-            width: LOGIN_UI.innerWidth,
-            minHeight: LOGIN_UI.innerMinHeight,
-            borderRadius: `${LOGIN_UI.innerRadius}px`,
+            width: 480, 
+            minHeight: 500,
+            borderRadius: '34px', 
             background: `
               linear-gradient(
                 180deg,
@@ -55,13 +46,13 @@ export function LoginPage() {
               ),
               #FFFFFF
             `,
-            p: `${LOGIN_UI.innerPadding}px`,
+            p: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
           }}
         >
-          <Stack sx={{ width: '100%', gap: '32px', alignItems: 'center' }}>
+          <Stack sx={{ width: '100%', gap: 4, alignItems: 'center' }}>
             <LogoBadge />
 
             <Box sx={{ width: '100%' }}>
@@ -73,22 +64,29 @@ export function LoginPage() {
               </Typography>
             </Box>
 
-            {mutation.isError && <Alert severity="error">{getErrorMessage(mutation.error)}</Alert>}
+            {error && <Alert severity="error">{getErrorMessage(error)}</Alert>}
 
             <LoginForm
               onSubmit={onSubmit}
               register={register}
               errors={errors}
-              isPending={mutation.isPending}
+              isPending={isLoading}
             />
 
             <Divider />
 
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
               {LOGIN_TEXT.noAccount}{' '}
-              <Box component="span" sx={{ color: 'primary.main', fontWeight: 600, cursor: 'pointer' }}>
-                {LOGIN_TEXT.create}
-              </Box>
+              <Link to="/register" style={{ textDecoration: 'none' }}>
+                <Typography
+                  component="span"
+                  color="primary.main"
+                  fontWeight={600}
+                  sx={{ cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                >
+                  {LOGIN_TEXT.create}
+                </Typography>
+              </Link>
             </Typography>
           </Stack>
         </Box>

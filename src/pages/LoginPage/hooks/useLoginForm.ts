@@ -33,8 +33,11 @@ export function useLoginForm() {
   const onSubmit = form.handleSubmit((values) => mutation.mutate(values));
 
   return {
-    ...form,
-    mutation,
+    register: form.register,
+    formState: form.formState, 
     onSubmit,
+    
+    isLoading: mutation.isPending,
+    error: mutation.error,
   };
 }
