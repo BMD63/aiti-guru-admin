@@ -10,7 +10,7 @@ import { useProductsUIOverlays } from './ProductsPage/hooks/useProductsUIOverlay
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
 import { productsQueryKey } from '../entities/product/queries/queryKeys';
-import { useAddProduct } from './ProductsPage/hooks/useAddProduct';
+import { useAddProduct } from './ProductsPage/hooks/useAddProduct'
 import { isSortableColumn } from './ProductsPage/utils/sorting';
 
 import { createProductColumns } from './ProductsPage/columns';
@@ -40,14 +40,18 @@ export function ProductsPage() {
   const queryClient = useQueryClient();
 
   // search
-  const [q, setQ] = useState('');
+  const { searchParams, set: setParams, getNumber } = useSearchParamsState();
+  const q = searchParams.get('q') ?? '';
   const debouncedQ = useDebouncedValue(q, 400);
+
+const setQ = (value: string) => {
+  setParams({ q: value || null }); // null удаляет параметр из URL
+};
 
   // dialog
   const [open, setOpen] = useState(false);
 
   // url
-  const { getNumber, set: setParams } = useSearchParamsState();
   const page = Math.max(1, getNumber('page', 1));
   const limit = PRODUCTS_PAGE.limit;
   const skip = (page - 1) * limit;
@@ -195,7 +199,6 @@ export function ProductsPage() {
                     ))}
                   </TableBody>
                 </Table>
-
                 <PaginationFooter
                   page={page}
                   totalPages={totalPages}
