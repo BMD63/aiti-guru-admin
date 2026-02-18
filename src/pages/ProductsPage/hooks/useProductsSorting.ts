@@ -1,14 +1,9 @@
 import { useMemo } from 'react';
 import type { SortingState } from '@tanstack/react-table';
 import { useSearchParamsState } from '../../../shared/hooks/useSearchParamsState';
+import { isSortableColumn, SORTABLE_COLUMNS, type SortableColumn } from '../utils/sorting';
 
-export const SORTABLE_COLUMNS = ['title', 'price', 'rating', 'brand'] as const;
-export type SortableColumnId = (typeof SORTABLE_COLUMNS)[number];
 export type SortOrder = 'asc' | 'desc';
-
-export function isSortableColumn(value: string | null): value is SortableColumnId {
-  return value !== null && (SORTABLE_COLUMNS as readonly string[]).includes(value);
-}
 
 export function useProductsSorting() {
   const { searchParams, set } = useSearchParamsState();
@@ -24,7 +19,7 @@ export function useProductsSorting() {
     return [{ id: sortBy, desc: order === 'desc' }];
   }, [sortBy, order]);
 
-  const toggleSort = (columnId: SortableColumnId) => {
+  const toggleSort = (columnId: SortableColumn) => {
     if (sortBy !== columnId) {
       set({ sortBy: columnId, order: 'asc', page: 1 });
       return;

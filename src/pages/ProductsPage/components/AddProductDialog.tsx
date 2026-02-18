@@ -1,6 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField } from '@mui/material';
 import type { UseFormRegister, FieldErrors } from 'react-hook-form';
-import type { CreateProductInput } from '../../../features/auth/schemas/createProduct.schema';
+import type { CreateProductInput } from '../../../entities/product/schemas/createProduct.schema';
 
 type Props = {
   open: boolean;

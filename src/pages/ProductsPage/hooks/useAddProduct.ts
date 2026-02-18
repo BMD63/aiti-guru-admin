@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { UseFormReset } from 'react-hook-form';
 
 import type { Product, ProductsResponse } from '../../../entities/product/api/getProducts';
-import type { CreateProductFormValues, CreateProductInput } from '../../../features/auth/schemas/createProduct.schema';
+import type { CreateProductFormValues, CreateProductInput } from '../../../entities/product/schemas/createProduct.schema';
 
 type Params = {
   queryKey: readonly unknown[];

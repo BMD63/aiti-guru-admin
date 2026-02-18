@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Box,
   Button,
@@ -17,7 +18,6 @@ type Props = {
   total: number;
   skip: number;
   limit: number;
-  pagesToShow: Array<number | 'dots'>;
   onChangePage: (page: number) => void;
 };
 
@@ -27,9 +27,31 @@ export function PaginationFooter({
   total,
   skip,
   limit,
-  pagesToShow,
   onChangePage,
 }: Props) {
+  const pagesToShow = useMemo(() => {
+    const last = Math.max(totalPages, 1);
+    const current = Math.min(Math.max(page, 1), last);
+    const res: Array<number | 'dots'> = [];
+
+    const push = (v: number | 'dots') => {
+      if (res[res.length - 1] === v) return;
+      res.push(v);
+    };
+
+    push(1);
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(last - 1, current + 1);
+
+    if (start > 2) push('dots');
+    for (let p = start; p <= end; p++) push(p);
+    if (end < last - 1) push('dots');
+    if (last > 1) push(last);
+
+    return res;
+  }, [page, totalPages]);
+
   return (
     <Box
       sx={{

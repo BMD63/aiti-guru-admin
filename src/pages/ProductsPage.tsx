@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback, } from 'react';
 import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -10,9 +10,10 @@ import { useProductsSorting } from './ProductsPage/hooks/useProductsSorting';
 import { useProductsSelection } from './ProductsPage/hooks/useProductsSelection';
 import { useProductsUIOverlays } from './ProductsPage/hooks/useProductsUIOverlays';
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
+import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
 import { productsQueryKey } from '../entities/product/queries/queryKeys';
 import { useAddProduct } from './ProductsPage/hooks/useAddProduct';
-import { isSortableColumn } from './ProductsPage/hooks/useProductsSorting';
+import { isSortableColumn } from './ProductsPage/utils/sorting';
 
 import { createProductColumns } from './ProductsPage/columns';
 import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
@@ -24,7 +25,7 @@ import {
   createProductSchema,
   type CreateProductFormValues,
   type CreateProductInput,
-} from '../features/auth/schemas/createProduct.schema';
+} from '../entities/product/schemas/createProduct.schema';
 
 import {
   Box,
@@ -49,7 +50,7 @@ export function ProductsPage() {
 
   // search
   const [q, setQ] = useState('');
-  const debouncedQ = q;
+  const debouncedQ = useDebouncedValue(q, 400);
 
   // dialog
   const [open, setOpen] = useState(false);
@@ -153,32 +154,10 @@ export function ProductsPage() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const pagesToShow = useMemo(() => {
-    const last = Math.max(totalPages, 1);
-    const current = Math.min(Math.max(page, 1), last);
-    const res: Array<number | 'dots'> = [];
 
-    const push = (v: number | 'dots') => {
-      if (res[res.length - 1] === v) return;
-      res.push(v);
-    };
-
-    push(1);
-
-    const start = Math.max(2, current - 1);
-    const end = Math.min(last - 1, current + 1);
-
-    if (start > 2) push('dots');
-    for (let p = start; p <= end; p++) push(p);
-    if (end < last - 1) push('dots');
-    if (last > 1) push(last);
-
-    return res;
-  }, [page, totalPages]);
-
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: currentProductsKey, exact: true });
-  };
+  }, [queryClient, currentProductsKey]);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#F6F6F6', pt: 3 }}>
@@ -246,7 +225,6 @@ export function ProductsPage() {
                   total={total}
                   skip={skip}
                   limit={limit}
-                  pagesToShow={pagesToShow}
                   onChangePage={changePage}
                 />
               </>
