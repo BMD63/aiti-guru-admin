@@ -1,5 +1,5 @@
-import { useMemo, useState, useEffect, useRef, useCallback, } from 'react';
-import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
+import { useMemo, useState, useCallback } from 'react';
+import { useReactTable, getCoreRowModel, getSortedRowModel } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { PRODUCTS_PAGE } from './ProductsPage/constants';
@@ -10,8 +10,9 @@ import { useProductsUIOverlays } from './ProductsPage/hooks/useProductsUIOverlay
 import { useProductsQuery } from '../entities/product/queries/useProductsQuery';
 import { useDebouncedValue } from '../shared/hooks/useDebouncedValue';
 import { productsQueryKey } from '../entities/product/queries/queryKeys';
-import { useAddProduct } from './ProductsPage/hooks/useAddProduct'
-import { isSortableColumn } from './ProductsPage/utils/sorting';
+import { useAddProduct } from './ProductsPage/hooks/useAddProduct';
+
+import { DataTable } from '../shared/ui/DataTable';
 
 import { createProductColumns } from './ProductsPage/columns';
 import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
@@ -27,11 +28,6 @@ import {
   CardHeader,
   LinearProgress,
   Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   Typography,
 } from '@mui/material';
 import AlertMUI from '@mui/material/Alert';
@@ -39,53 +35,32 @@ import AlertMUI from '@mui/material/Alert';
 export function ProductsPage() {
   const queryClient = useQueryClient();
 
-  // search
   const { searchParams, set: setParams, getNumber } = useSearchParamsState();
+  
   const q = searchParams.get('q') ?? '';
   const debouncedQ = useDebouncedValue(q, 400);
 
-const setQ = (value: string) => {
-  setParams({ q: value || null }); // null удаляет параметр из URL
-};
+  const setQ = (value: string) => {
+    setParams({ q: value || null, page: 1 });
+  };
 
-  // dialog
-  const [open, setOpen] = useState(false);
-
-  // url
   const page = Math.max(1, getNumber('page', 1));
   const limit = PRODUCTS_PAGE.limit;
   const skip = (page - 1) * limit;
 
-  // stable query key
-  const currentProductsKey = productsQueryKey({ q: debouncedQ, limit, skip });
+  const currentProductsKey = useMemo(
+    () => productsQueryKey({ q: debouncedQ, limit, skip }),
+    [debouncedQ, limit, skip]
+  );
 
-  // data
   const { data, isFetching, isError, error } = useProductsQuery({
     q: debouncedQ,
     limit,
     skip,
   });
 
-  // sorting
-  const { sortingState, toggleSort } = useProductsSorting();
+  const { sortingState, setSortingState } = useProductsSorting();
 
-  // reset page on search change
-  const prevQRef = useRef(debouncedQ);
-  useEffect(() => {
-    if (prevQRef.current === debouncedQ) return;
-    prevQRef.current = debouncedQ;
-    setParams({ page: 1 }, { replace: true });
-  }, [debouncedQ, setParams]);
-
-  // pagination
-  const total = data?.total ?? 0;
-  const totalPages = Math.ceil(total / limit);
-
-  const changePage = (nextPage: number) => {
-    setParams({ page: nextPage });
-  };
-
-  // selection
   const {
     selectedIds,
     allChecked,
@@ -94,7 +69,6 @@ const setQ = (value: string) => {
     toggleOne,
   } = useProductsSelection(data?.products ?? []);
 
-  // overlays
   const {
     toastOpen,
     toastMessage,
@@ -106,14 +80,14 @@ const setQ = (value: string) => {
     closeMenu,
   } = useProductsUIOverlays();
 
-  // form
+  const [openDialog, setOpenDialog] = useState(false);
 
   const { addProduct } = useAddProduct({
     queryKey: currentProductsKey,
-    onClose: () => setOpen(false),
+    onClose: () => setOpenDialog(false),
     onToast: openToast,
   });
-    // columns
+
   const columns = useMemo(
     () =>
       createProductColumns({
@@ -127,14 +101,23 @@ const setQ = (value: string) => {
       }),
     [allChecked, someChecked, toggleAllCurrent, toggleOne, openToast, openMenu],
   );
+
   const table = useReactTable({
     data: data?.products ?? [],
     columns,
     state: { sorting: sortingState },
+    onSortingChange: setSortingState, 
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // --- Handlers ---
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / limit);
+
+  const changePage = (nextPage: number) => {
+    setParams({ page: nextPage });
+  };
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: currentProductsKey, exact: true });
@@ -153,7 +136,7 @@ const setQ = (value: string) => {
             action={
               <ProductsHeaderActions
                 onRefresh={handleRefresh}
-                onAdd={() => setOpen(true)}
+                onAdd={() => setOpenDialog(true)}
               />
             }
           />
@@ -163,42 +146,11 @@ const setQ = (value: string) => {
               <Typography color="error">{(error as Error).message}</Typography>
             ) : (
               <>
-                <Table>
-                  <TableHead>
-                    {table.getHeaderGroups().map((hg) => (
-                      <TableRow key={hg.id}>
-                        {hg.headers.map((header) => {
-                          const id = header.column.id;
-                          const sortable = isSortableColumn(id);
+                <DataTable 
+                  table={table} 
+                  emptyMessage="Товары не найдены" 
+                />
 
-                          return (
-                            <TableCell
-                              key={header.id}
-                              onClick={sortable ? () => toggleSort(id) : undefined}
-                            >
-                              {flexRender(header.column.columnDef.header, header.getContext())}
-                              {sortable &&
-                                sortingState[0]?.id === id &&
-                                (sortingState[0]?.desc ? ' ↓' : ' ↑')}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
-                    ))}
-                  </TableHead>
-
-                  <TableBody>
-                    {table.getRowModel().rows.map((row) => (
-                      <TableRow key={row.id}>
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
                 <PaginationFooter
                   page={page}
                   totalPages={totalPages}
@@ -214,8 +166,8 @@ const setQ = (value: string) => {
       </Box>
 
       <AddProductDialog
-        open={open}
-        onClose={() => setOpen(false)}
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
         onSuccess={addProduct}
         isSubmitting={isFetching}
       />
