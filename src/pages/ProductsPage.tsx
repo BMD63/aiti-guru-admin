@@ -1,8 +1,6 @@
 import { useMemo, useState, useEffect, useRef, useCallback, } from 'react';
 import { flexRender, getCoreRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table';
 import { useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 import { PRODUCTS_PAGE } from './ProductsPage/constants';
 import { useSearchParamsState } from '../shared/hooks/useSearchParamsState';
@@ -20,12 +18,6 @@ import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
 import { PaginationFooter } from './ProductsPage/components/PaginationFooter';
 import { ProductsToolbar } from './ProductsPage/components/ProductsToolbar';
 import { ProductsHeaderActions } from './ProductsPage/components/ProductsHeaderActions';
-
-import {
-  createProductSchema,
-  type CreateProductFormValues,
-  type CreateProductInput,
-} from '../entities/product/schemas/createProduct.schema';
 
 import {
   Box,
@@ -116,23 +108,13 @@ export function ProductsPage() {
   } = useProductsUIOverlays();
 
   // form
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateProductInput, unknown, CreateProductFormValues>({
-    resolver: zodResolver(createProductSchema),
-  });
 
   const { addProduct } = useAddProduct({
     queryKey: currentProductsKey,
     onClose: () => setOpen(false),
     onToast: openToast,
-    reset,
   });
-
-  // columns
+    // columns
   const columns = useMemo(
   () =>
     createProductColumns({
@@ -236,10 +218,8 @@ export function ProductsPage() {
       <AddProductDialog
         open={open}
         onClose={() => setOpen(false)}
-        onSubmit={handleSubmit(addProduct)}
+        onSuccess={addProduct}
         isSubmitting={isFetching}
-        register={register}
-        errors={errors}
       />
 
       <Menu

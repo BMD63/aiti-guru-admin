@@ -1,17 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query';
-import type { UseFormReset } from 'react-hook-form';
 
 import type { Product, ProductsResponse } from '../../../entities/product/api/getProducts';
-import type { CreateProductFormValues, CreateProductInput } from '../../../entities/product/schemas/createProduct.schema';
+import type { CreateProductFormValues } from '../../../entities/product/schemas/createProduct.schema';
 
 type Params = {
   queryKey: readonly unknown[];
   onClose: () => void;
   onToast: (message: string, severity?: 'success' | 'info') => void;
-  reset: UseFormReset<CreateProductInput>;
 };
 
-export function useAddProduct({ queryKey, onClose, onToast, reset }: Params) {
+export function useAddProduct({ queryKey, onClose, onToast }: Params) {
   const queryClient = useQueryClient();
 
   const addProduct = (values: CreateProductFormValues) => {
@@ -32,7 +30,6 @@ export function useAddProduct({ queryKey, onClose, onToast, reset }: Params) {
       };
     });
 
-    reset();
     onClose();
     onToast('Товар успешно добавлен', 'success');
   };
