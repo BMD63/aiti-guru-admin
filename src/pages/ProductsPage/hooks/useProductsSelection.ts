@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { Product } from '../../../entities/product/api/getProducts';
 
 export function useProductsSelection(products: Product[]) {
@@ -12,7 +12,7 @@ export function useProductsSelection(products: Product[]) {
   const someChecked =
     currentIds.some((id) => selectedIds.has(id)) && !allChecked;
 
-  const toggleAllCurrent = () => {
+  const toggleAllCurrent = useCallback(() => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (allChecked) {
@@ -22,16 +22,16 @@ export function useProductsSelection(products: Product[]) {
       }
       return next;
     });
-  };
+  }, [allChecked, currentIds]);
 
-  const toggleOne = (id: number) => {
+  const toggleOne = useCallback((id: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
+  }, []);
 
   return {
     selectedIds,

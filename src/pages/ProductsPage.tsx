@@ -18,6 +18,7 @@ import { AddProductDialog } from './ProductsPage/components/AddProductDialog';
 import { PaginationFooter } from './ProductsPage/components/PaginationFooter';
 import { ProductsToolbar } from './ProductsPage/components/ProductsToolbar';
 import { ProductsHeaderActions } from './ProductsPage/components/ProductsHeaderActions';
+import { ProductActionsMenu } from './ProductsPage/components/ProductActionsMenu';
 
 import {
   Box,
@@ -25,8 +26,6 @@ import {
   CardContent,
   CardHeader,
   LinearProgress,
-  Menu,
-  MenuItem,
   Snackbar,
   Table,
   TableBody,
@@ -54,10 +53,7 @@ export function ProductsPage() {
   const skip = (page - 1) * limit;
 
   // stable query key
-  const currentProductsKey = useMemo(
-    () => productsQueryKey({ q: debouncedQ, limit, skip }),
-    [debouncedQ, limit, skip],
-  );
+  const currentProductsKey = productsQueryKey({ q: debouncedQ, limit, skip });
 
   // data
   const { data, isFetching, isError, error } = useProductsQuery({
@@ -116,18 +112,18 @@ export function ProductsPage() {
   });
     // columns
   const columns = useMemo(
-  () =>
-    createProductColumns({
-      selectedIds,
-      toggleAllCurrent,
-      toggleOne,
-      allChecked,
-      someChecked,
-      openToast,
-      handleOpenMenu: openMenu,
-    }),
-  [selectedIds, allChecked, someChecked, toggleAllCurrent, toggleOne, openToast, openMenu],
-);
+    () =>
+      createProductColumns({
+        selectedIds,
+        toggleAllCurrent,
+        toggleOne,
+        allChecked,
+        someChecked,
+        openToast,
+        handleOpenMenu: openMenu,
+      }),
+    [allChecked, someChecked, toggleAllCurrent, toggleOne, openToast, openMenu],
+  );
   const table = useReactTable({
     data: data?.products ?? [],
     columns,
@@ -222,21 +218,13 @@ export function ProductsPage() {
         isSubmitting={isFetching}
       />
 
-      <Menu
+      <ProductActionsMenu
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
         onClose={closeMenu}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        keepMounted
-      >
-        <MenuItem onClick={() => { closeMenu(); openToast('Редактирование скоро', 'info'); }}>
-          Редактировать
-        </MenuItem>
-        <MenuItem onClick={() => { closeMenu(); openToast('Удаление скоро', 'info'); }}>
-          Удалить
-        </MenuItem>
-      </Menu>
+        onEdit={() => openToast('Редактирование скоро', 'info')}
+        onDelete={() => openToast('Удаление скоро', 'info')}
+      />
 
       <Snackbar open={toastOpen} autoHideDuration={3000} onClose={closeToast}>
         <AlertMUI severity={toastSeverity} variant="filled">
