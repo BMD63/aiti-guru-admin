@@ -1,43 +1,30 @@
-import { useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import type { SortingState } from '@tanstack/react-table';
-import { useSearchParamsState } from '../../../shared/hooks/useSearchParamsState';
-import { isSortableColumn, SORTABLE_COLUMNS, type SortableColumn } from '../utils/sorting';
-
-export type SortOrder = 'asc' | 'desc';
+import { isSortableColumn } from '../utils/sorting';
 
 export function useProductsSorting() {
-  const { searchParams, set } = useSearchParamsState();
+  const [sortingState, setSortingState] = useState<SortingState>([]);
 
-  const sortByRaw = searchParams.get('sortBy');
-  const orderRaw = searchParams.get('order');
+  const toggleSort = useCallback((columnId: string) => {
+    if (!isSortableColumn(columnId)) return;
 
-  const sortBy = isSortableColumn(sortByRaw) ? sortByRaw : null;
-  const order: SortOrder = orderRaw === 'desc' ? 'desc' : 'asc';
+    setSortingState((prev) => {
+      const current = prev[0];
 
-  const sortingState: SortingState = useMemo(() => {
-    if (!sortBy) return [];
-    return [{ id: sortBy, desc: order === 'desc' }];
-  }, [sortBy, order]);
+      if (!current || current.id !== columnId) {
+        return [{ id: columnId, desc: false }];
+      }
 
-  const toggleSort = (columnId: SortableColumn) => {
-    if (sortBy !== columnId) {
-      set({ sortBy: columnId, order: 'asc', page: 1 });
-      return;
-    }
+      if (!current.desc) {
+        return [{ id: columnId, desc: true }];
+      }
 
-    if (order === 'asc') {
-      set({ sortBy: columnId, order: 'desc', page: 1 });
-      return;
-    }
-
-    set({ sortBy: null, order: null, page: 1 });
-  };
+      return [];
+    });
+  }, []);
 
   return {
     sortingState,
     toggleSort,
-    currentSort: sortBy,
-    currentOrder: order,
-    sortableColumns: SORTABLE_COLUMNS,
   };
 }

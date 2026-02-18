@@ -63,8 +63,7 @@ export function ProductsPage() {
   });
 
   // sorting
-  const { sortingState, toggleSort, currentSort, currentOrder, } =
-    useProductsSorting();
+  const { sortingState, toggleSort } = useProductsSorting();
 
   // reset page on search change
   const prevQRef = useRef(debouncedQ);
@@ -175,8 +174,8 @@ export function ProductsPage() {
                             >
                               {flexRender(header.column.columnDef.header, header.getContext())}
                               {sortable &&
-                                currentSort === id &&
-                                (currentOrder === 'desc' ? ' ↓' : ' ↑')}
+                                sortingState[0]?.id === id &&
+                                (sortingState[0]?.desc ? ' ↓' : ' ↑')}
                             </TableCell>
                           );
                         })}
