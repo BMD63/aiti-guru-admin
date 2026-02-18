@@ -1,14 +1,6 @@
-import React, { createContext, useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { clearToken, readToken, writeToken } from './storage';
-
-type AuthContextValue = {
-  token: string | null;
-  isAuthenticated: boolean;
-  setSession: (token: string, remember: boolean) => void;
-  logout: () => void;
-};
-
-export const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext, type AuthContextValue } from './AuthContext';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => readToken());

@@ -1,9 +1,11 @@
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, ColumnMeta } from '@tanstack/react-table';
 import { Box, Checkbox, IconButton, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 
 import type { Product } from '../../entities/product/api/getProducts';
+
+type ProductColumnMeta = ColumnMeta<Product, unknown>;
 
 type Params = {
   selectedIds: Set<number>;
@@ -40,19 +42,19 @@ export function createProductColumns({
           onChange={() => toggleOne(row.original.id)}
         />
       ),
-      meta: { align: 'center', width: 60 } as any,
+      meta: { align: 'center', width: 60 } as ProductColumnMeta,
     },
     {
       id: 'title',
       accessorKey: 'title',
       header: 'Название',
-      meta: { width: 350 } as any,
+      meta: { width: 350 } as ProductColumnMeta,
     },
     {
       id: 'price',
       accessorKey: 'price',
       header: 'Цена',
-      meta: { width: 140, align: 'right' } as any,
+      meta: { width: 140, align: 'right' } as ProductColumnMeta,
     },
     {
       id: 'rating',
@@ -70,13 +72,13 @@ export function createProductColumns({
           </Typography>
         );
       },
-      meta: { width: 120, align: 'center' } as any,
+      meta: { width: 120, align: 'center' } as ProductColumnMeta,
     },
     {
       id: 'brand',
       accessorKey: 'brand',
       header: 'Бренд',
-      meta: { width: 200 } as any,
+      meta: { width: 200 } as ProductColumnMeta,
     },
     {
       id: 'plus',
@@ -99,7 +101,7 @@ export function createProductColumns({
           <AddIcon sx={{ color: '#FFFFFF', fontSize: 16 }} />
         </Box>
       ),
-      meta: { align: 'center', width: 80 } as any,
+      meta: { align: 'center', width: 80 } as ProductColumnMeta,
     },
     {
       id: 'actions',
@@ -113,7 +115,7 @@ export function createProductColumns({
           <MoreHorizIcon fontSize="small" />
         </IconButton>
       ),
-      meta: { align: 'center', width: 80 } as any,
+      meta: { align: 'center', width: 80 } as ProductColumnMeta,
     },
 
   ];

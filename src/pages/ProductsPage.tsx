@@ -99,14 +99,14 @@ export function ProductsPage() {
         openToast,
         handleOpenMenu: openMenu,
       }),
-    [allChecked, someChecked, toggleAllCurrent, toggleOne, openToast, openMenu],
+    [selectedIds, allChecked, someChecked, toggleAllCurrent, toggleOne, openToast, openMenu],
   );
-
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table manages its own memoization stability
   const table = useReactTable({
     data: data?.products ?? [],
     columns,
     state: { sorting: sortingState },
-    onSortingChange: setSortingState, 
+    onSortingChange: setSortingState,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });

@@ -28,8 +28,8 @@ export async function login(request: LoginRequest): Promise<LoginResponse> {
       typeof data === 'object' &&
       data !== null &&
       'message' in data &&
-      typeof (data as any).message === 'string'
-        ? (data as any).message
+      typeof (data as { message: unknown }).message === 'string'
+        ? (data as { message: string }).message
         : 'Login failed';
     throw new Error(message);
   }
